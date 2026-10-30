@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { UserProfile } from "@/types/types";
+import type { UserProfile } from "@/types/types";
 import { WorkflowCard } from "@/components/card";
-import Link from "next/link";
+import Navbar from "@/components/NavBar";
+
 import {
   Trees,
   Truck,
@@ -26,6 +27,7 @@ export default function HomePage() {
         role: "Administrator",
         email: "cody@cedarshop.com",
       });
+
       setLoading(false);
     }, 500);
 
@@ -42,105 +44,72 @@ export default function HomePage() {
 
   return (
     <div className="appShell">
-      {/* Header Navigation */}
-      <header className="siteHeader">
-        <div className="headerInner">
-          <div className="brand">
-            <div className="brandIcon">
-              <Trees className="iconLarge" />
-            </div>
-            <span className="brandName">
-              The Cedar Shop LMS
-            </span>
-          </div>
+      <Navbar user={user} />
 
-          <div>
-            {user ? (
-              <div className="headerActions">
-                <span className="greeting">
-                  Hello, {user.name}
-                </span>
-                <Link
-                  href="/settings"
-                  className="button buttonSettings"
-                >
-                  Settings
-                </Link>
-              </div>
-            ) : (
-              <Link
-                href="/login"
-                className="button buttonPrimary"
-              >
-                Sign In
-              </Link>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content Area */}
       <main className="homeMain">
-        {/* Persona Workflow Shortcuts Grid */}
         <section>
           <div className="grid grid-cols-1 gap-6 min-[601px]:grid-cols-2 min-[901px]:grid-cols-3">
             {/* Customer Zone */}
-            {user?.role == "Customer" || user?.role == "Administrator" ? (
+            {user?.role === "Customer" ||
+            user?.role === "Administrator" ? (
               <WorkflowCard
                 title="Customer Portal"
                 role="Customer"
-                href="/portal/orders"
+                href="/portal"
                 icon={<ShoppingCart className="workflowCardIcon" />}
                 description="View order histories, track live jobsite deliveries, and view exact moisture-adjusted wood weight specs."
-                activeRole={user?.role}
+                activeRole={user.role}
               />
             ) : null}
 
             {/* Sales Zone */}
-            {user?.role == "SalesStaff" || user?.role == "Administrator" ? (
+            {user?.role === "SalesStaff" ||
+            user?.role === "Administrator" ? (
               <WorkflowCard
                 title="Sales Counter & POS"
                 role="SalesStaff"
                 href="/sales/dashboard"
                 icon={<Trees className="workflowCardIcon" />}
                 description="Quick stock lookup across species/UOMs, build custom quotes with contractor discount tiers, and stage orders."
-                activeRole={user?.role}
+                activeRole={user.role}
               />
             ) : null}
 
             {/* Yard / Floor Staff PWA */}
-            {user?.role == "FloorStaff" || user?.role == "Administrator" ? (
+            {user?.role === "FloorStaff" ||
+            user?.role === "Administrator" ? (
               <WorkflowCard
                 title="Yard & Mobile PWA"
                 role="FloorStaff"
                 href="/yard/dashboard"
                 icon={<ScanLine className="workflowCardIcon" />}
                 description="Mobile barcode scanner, kiln work-order yield tracking, and camera-enabled damage/loss tagging."
-                activeRole={user?.role}
+                activeRole={user.role}
               />
             ) : null}
 
             {/* Driver App */}
-            {user?.role == "Driver" || user?.role == "Administrator" ? (
+            {user?.role === "Driver" ||
+            user?.role === "Administrator" ? (
               <WorkflowCard
                 title="Driver Delivery App"
                 role="Driver"
                 href="/driver/dashboard"
                 icon={<Truck className="workflowCardIcon" />}
                 description="Assigned route planning, truck weight verification, and photo proof-of-delivery capture."
-                activeRole={user?.role}
+                activeRole={user.role}
               />
             ) : null}
 
             {/* Admin Management */}
-            {user?.role == "Administrator" ? (
+            {user?.role === "Administrator" ? (
               <WorkflowCard
                 title="Admin Dashboard"
                 role="Administrator"
                 href="/admin/dashboard"
                 icon={<ShieldAlert className="workflowCardIcon" />}
                 description="Master cost management, staff damage-photo write-off queue, and ECI Spruce migration utility."
-                activeRole={user?.role}
+                activeRole={user.role}
               />
             ) : null}
           </div>
