@@ -15,7 +15,9 @@ const themeListeners = new Set<() => void>();
 
 function getThemeSnapshot(): Theme {
   const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
-  return storedTheme === "light" || storedTheme === "dark" ? storedTheme : "dark";
+  return storedTheme === "light" || storedTheme === "dark"
+    ? storedTheme
+    : "dark";
 }
 
 function getServerThemeSnapshot(): Theme {
@@ -59,7 +61,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     toggleTheme: () => saveTheme(theme === "dark" ? "light" : "dark"),
   };
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  return (
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+  );
 }
 
 export function useTheme() {
