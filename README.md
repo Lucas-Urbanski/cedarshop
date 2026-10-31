@@ -20,6 +20,20 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Firebase Firestore rules
+
+The app stores user profiles in the `users/{uid}` collection. Before using signup
+or Google sign-in, deploy the included rules to the `cedarshoplms` Firebase
+project:
+
+```bash
+firebase deploy --only firestore:rules --project cedarshoplms
+```
+
+The rules let signed-in users read their own profile and create only their own
+customer profile. Assign staff or administrator roles using a trusted Firebase
+Admin SDK environment, never from client code.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

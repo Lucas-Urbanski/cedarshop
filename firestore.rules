@@ -1,0 +1,47 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow get: if request.auth != null && request.auth.uid == userId;
+
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasAll([
+          'uid',
+          'email',
+          'fullName',
+          'role',
+          'createdAt',
+          'shippingAddress'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'email',
+          'fullName',
+          'role',
+          'createdAt',
+          'shippingAddress'
+        ])
+        && request.resource.data.uid == userId
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.fullName is string
+        && request.resource.data.role == 'customer'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.shippingAddress is map
+        && request.resource.data.shippingAddress.keys().hasAll([
+          'street',
+          'city',
+          'postalCode'
+        ])
+        && request.resource.data.shippingAddress.keys().hasOnly([
+          'street',
+          'city',
+          'postalCode'
+        ])
+        && request.resource.data.shippingAddress.street is string
+        && request.resource.data.shippingAddress.city is string
+        && request.resource.data.shippingAddress.postalCode is string;
+    }
+  }
+}

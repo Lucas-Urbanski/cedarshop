@@ -1,9 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { UserProfile } from "@/types/types";
+import type { UserProfile, UserRole } from "@/types/types";
 import { WorkflowCard } from "@/components/card";
 import Link from "next/link";
+import { auth, db } from "@/utils/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { LogoutButton } from "@/components/auth/logoutButton";
 import {
   Trees,
   Truck,
@@ -12,24 +16,98 @@ import {
   ShieldAlert,
 } from "lucide-react";
 
+const userRoles: Record<string, UserRole> = {
+  customer: "Customer",
+  driver: "Driver",
+  floorstaff: "FloorStaff",
+  salesstaff: "SalesStaff",
+  administrator: "Administrator",
+};
+
 export default function HomePage() {
-  // Mock auth state (Replace with your actual Firebase Auth hook / Context)
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate checking Firebase auth state on load
-    const timer = setTimeout(() => {
-      // Example logged-in user (Set to null to preview public guest view)
-      setUser({
-        name: "Cody",
-        role: "Administrator",
-        email: "cody@cedarshop.com",
-      });
-      setLoading(false);
-    }, 500);
+    let isCurrent = true;
 
-    return () => clearTimeout(timer);
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      async (firebaseUser) => {
+        if (!firebaseUser || !firebaseUser.emailVerified) {
+          if (firebaseUser) {
+            try {
+              await signOut(auth);
+            } catch (error: unknown) {
+              if (isCurrent) {
+                setAuthError(
+                  error instanceof Error ? error.message : "Sign out failed.",
+                );
+              }
+            }
+          }
+          if (isCurrent) {
+            setUser(null);
+            setLoading(false);
+          }
+          return;
+        }
+
+        try {
+          const profileSnapshot = await getDoc(
+            doc(db, "users", firebaseUser.uid),
+          );
+          if (!profileSnapshot.exists()) {
+            throw new Error("Your Cedar Shop account profile could not be found.");
+          }
+
+          const profile = profileSnapshot.data();
+          const roleValue =
+            typeof profile.role === "string"
+              ? userRoles[profile.role.toLowerCase().replace(/\s+/g, "")]
+              : undefined;
+          if (!roleValue) {
+            throw new Error("Your Cedar Shop account role is not recognized.");
+          }
+
+          if (isCurrent) {
+            setUser({
+              name:
+                (typeof profile.fullName === "string" && profile.fullName) ||
+                firebaseUser.displayName ||
+                firebaseUser.email ||
+                "Customer",
+              email: firebaseUser.email ?? "",
+              role: roleValue,
+            });
+            setAuthError(null);
+          }
+        } catch (error: unknown) {
+          if (isCurrent) {
+            setUser(null);
+            setAuthError(
+              error instanceof Error
+                ? error.message
+                : "Could not load your account profile.",
+            );
+          }
+        } finally {
+          if (isCurrent) setLoading(false);
+        }
+      },
+      (error) => {
+        if (isCurrent) {
+          setAuthError(error.message);
+          setLoading(false);
+        }
+      },
+    );
+
+    return () => {
+      isCurrent = false;
+      unsubscribe();
+    };
   }, []);
 
   if (loading) {
@@ -54,26 +132,24 @@ export default function HomePage() {
             </span>
           </div>
 
-          <div>
+          <div className="headerActions">
             {user ? (
-              <div className="headerActions">
-                <span className="greeting">
-                  Hello, {user.name}
-                </span>
-                <Link
-                  href="/settings"
-                  className="button buttonSettings"
-                >
+              <>
+                <span className="greeting">Hello, {user.name}</span>
+                <Link href="/settings" className="button buttonSettings">
                   Settings
                 </Link>
-              </div>
+                <LogoutButton className="button buttonSettings" />
+              </>
             ) : (
-              <Link
-                href="/login"
-                className="button buttonPrimary"
-              >
-                Sign In
-              </Link>
+              <>
+                <Link href="/auth/login" className="button buttonSettings">
+                  Sign In
+                </Link>
+                <Link href="/auth/signup" className="button buttonPrimary">
+                  Sign Up
+                </Link>
+              </>
             )}
           </div>
         </div>
@@ -81,6 +157,11 @@ export default function HomePage() {
 
       {/* Main Content Area */}
       <main className="homeMain">
+        {authError && (
+          <p role="alert" className="mb-6 rounded-md border border-red-400/30 bg-red-950/40 px-4 py-3 text-sm text-red-200">
+            {authError}
+          </p>
+        )}
         {/* Persona Workflow Shortcuts Grid */}
         <section>
           <div className="grid grid-cols-1 gap-6 min-[601px]:grid-cols-2 min-[901px]:grid-cols-3">
