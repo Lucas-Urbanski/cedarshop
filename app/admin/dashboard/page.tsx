@@ -2,6 +2,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import Navbar from "@/components/NavBar";
 
 type Product = {
   id: number;
@@ -83,11 +85,20 @@ const initialReports: LossReport[] = [
   },
 ];
 
-const money = (value: number) =>
-  value.toLocaleString("en-CA", {
+const money = (amount: number) =>
+  amount.toLocaleString("en-CA", {
     style: "currency",
     currency: "CAD",
   });
+
+const cardClass =
+  "rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm";
+
+const inputClass =
+  "w-full rounded-lg border border-[var(--border-hover)] bg-[var(--surface-muted)] px-3 py-2.5 text-[var(--text-primary)] outline-none focus:border-[var(--accent)]";
+
+const primaryButton =
+  "rounded-lg bg-[var(--accent-strong)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110";
 
 export default function AdminDashboard() {
   const [products, setProducts] = useState(initialProducts);
@@ -185,56 +196,67 @@ export default function AdminDashboard() {
     );
   }
 
-  const cardClass =
-    "rounded-xl border border-white/10 bg-[#1e1c1b] p-5";
-
-  const buttonClass =
-    "rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600";
-
   return (
-    <main className="min-h-screen bg-[#2d2928] px-5 py-10 text-white md:px-10">
-      <div className="mx-auto max-w-7xl space-y-8">
+    <div className="appShell">
+      <Navbar user={null}>
+        <nav className="flex flex-wrap items-center gap-4 text-sm text-white">
+          <Link href="/" className="hover:underline">
+            Home
+          </Link>
+          <span className="font-semibold text-[var(--highlight)]">
+            Admin Dashboard
+          </span>
+        </nav>
+      </Navbar>
+
+      <main className="mx-auto w-full max-w-7xl flex-1 space-y-7 px-4 py-8 text-[var(--text-primary)] sm:px-6 lg:px-8">
         <header>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-emerald-400">
-            The Cedar Shop
-          </p>
-          <h1 className="text-3xl font-bold">
+          <p className="eyebrow">The Cedar Shop</p>
+          <h1 className="text-3xl font-bold tracking-tight">
             Admin Dashboard
           </h1>
-          <p className="mt-2 text-sm text-gray-400">
+          <p className="mt-2 text-sm text-[var(--text-secondary)]">
             Manage lumber inventory, review loss reports,
             and monitor operations.
           </p>
         </header>
 
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            {
-              label: "Total Lumber Products",
-              value: products.length.toString(),
-            },
-            {
-              label: "Available Units",
-              value: totalUnits.toLocaleString(),
-            },
-            {
-              label: "Inventory Cost Value",
-              value: money(inventoryValue),
-            },
-            {
-              label: "Pending Loss Reports",
-              value: pendingReports.toString(),
-            },
-          ].map((stat) => (
-            <div key={stat.label} className={cardClass}>
-              <p className="text-xs text-gray-400">
-                {stat.label}
-              </p>
-              <p className="mt-3 text-2xl font-bold">
-                {stat.value}
-              </p>
-            </div>
-          ))}
+          <div className={cardClass}>
+            <p className="text-sm text-[var(--text-muted)]">
+              Lumber Products
+            </p>
+            <p className="mt-2 text-3xl font-bold">
+              {products.length}
+            </p>
+          </div>
+
+          <div className={cardClass}>
+            <p className="text-sm text-[var(--text-muted)]">
+              Available Units
+            </p>
+            <p className="mt-2 text-3xl font-bold">
+              {totalUnits.toLocaleString()}
+            </p>
+          </div>
+
+          <div className={cardClass}>
+            <p className="text-sm text-[var(--text-muted)]">
+              Inventory Cost Value
+            </p>
+            <p className="mt-2 text-3xl font-bold">
+              {money(inventoryValue)}
+            </p>
+          </div>
+
+          <div className={cardClass}>
+            <p className="text-sm text-[var(--text-muted)]">
+              Pending Loss Reports
+            </p>
+            <p className="mt-2 text-3xl font-bold">
+              {pendingReports}
+            </p>
+          </div>
         </section>
 
         <section className={cardClass}>
@@ -243,33 +265,41 @@ export default function AdminDashboard() {
               <h2 className="text-xl font-bold">
                 Inventory Management
               </h2>
-              <p className="mt-1 text-sm text-gray-400">
+              <p className="mt-1 text-sm text-[var(--text-secondary)]">
                 Search products and adjust available quantities.
               </p>
             </div>
-            <span className="rounded-full bg-amber-500/10 px-3 py-1 text-sm text-amber-400">
+
+            <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-sm font-semibold text-amber-500">
               {lowStockCount} low-stock product(s)
             </span>
           </div>
 
+          <label
+            htmlFor="admin-inventory-search"
+            className="mb-2 block text-sm font-semibold"
+          >
+            Search Inventory
+          </label>
           <input
+            id="admin-inventory-search"
             type="search"
-            placeholder="Search lumber by product name or SKU..."
+            placeholder="Search by product name or SKU..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            className="mb-5 w-full rounded-lg border border-white/10 bg-[#11100f] p-3 text-white outline-none focus:border-emerald-500"
+            className={inputClass}
           />
 
-          <div className="overflow-x-auto">
+          <div className="mt-5 overflow-x-auto">
             <table className="w-full min-w-[800px] text-left text-sm">
-              <thead className="bg-[#11100f] text-gray-300">
+              <thead className="bg-[var(--surface-muted)] text-[var(--text-secondary)]">
                 <tr>
-                  <th className="p-4">SKU</th>
-                  <th className="p-4">Product</th>
-                  <th className="p-4">Sale Price</th>
-                  <th className="p-4">Unit Cost</th>
-                  <th className="p-4">Available</th>
-                  <th className="p-4">Action</th>
+                  <th className="p-3">SKU</th>
+                  <th className="p-3">Product</th>
+                  <th className="p-3">Sale Price</th>
+                  <th className="p-3">Unit Cost</th>
+                  <th className="p-3">Available</th>
+                  <th className="p-3">Action</th>
                 </tr>
               </thead>
 
@@ -277,65 +307,78 @@ export default function AdminDashboard() {
                 {filteredProducts.map((product) => (
                   <tr
                     key={product.id}
-                    className="border-t border-white/10"
+                    className="border-t border-[var(--border)]"
                   >
-                    <td className="p-4">{product.sku}</td>
-                    <td className="p-4">{product.name}</td>
-                    <td className="p-4">
+                    <td className="p-3 font-medium">
+                      {product.sku}
+                    </td>
+                    <td className="p-3">
+                      {product.name}
+                    </td>
+                    <td className="p-3">
                       {money(product.price)}
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                       {money(product.cost)}
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                       {editingId === product.id ? (
                         <input
                           type="number"
-                          min="0"
-                          step="1"
+                          min={0}
+                          step={1}
                           value={editQuantity}
                           onChange={(event) =>
                             setEditQuantity(event.target.value)
                           }
-                          className="w-24 rounded border border-white/20 bg-black p-2"
+                          aria-label={`New stock quantity for ${product.name}`}
+                          className="w-24 rounded-lg border border-[var(--border-hover)] bg-[var(--surface-muted)] px-2 py-2 text-[var(--text-primary)]"
                         />
                       ) : (
                         <span
                           className={
                             product.quantity < 50
-                              ? "font-semibold text-amber-400"
-                              : "text-emerald-400"
+                              ? "font-semibold text-amber-500"
+                              : "font-semibold text-[var(--accent)]"
                           }
                         >
-                          {product.quantity}
+                          {product.quantity.toLocaleString()}
                         </span>
                       )}
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                       {editingId === product.id ? (
                         <div className="flex gap-2">
                           <button
-                            onClick={() => saveQuantity(product.id)}
-                            className={buttonClass}
+                            type="button"
+                            onClick={() =>
+                              saveQuantity(product.id)
+                            }
+                            className={primaryButton}
                           >
                             Save
                           </button>
                           <button
-                            onClick={() => setEditingId(null)}
-                            className="rounded-lg bg-gray-700 px-3 py-2 hover:bg-gray-600"
+                            type="button"
+                            onClick={() => {
+                              setEditingId(null);
+                              setEditQuantity("");
+                            }}
+                            className="rounded-lg border border-[var(--border-hover)] px-3 py-2 text-sm hover:bg-[var(--surface-raised)]"
                           >
                             Cancel
                           </button>
                         </div>
                       ) : (
                         <button
+                          type="button"
                           onClick={() => {
                             setEditingId(product.id);
                             setEditQuantity(
                               product.quantity.toString()
                             );
                           }}
-                          className={buttonClass}
+                          className={primaryButton}
                         >
                           Edit Stock
                         </button>
@@ -347,8 +390,8 @@ export default function AdminDashboard() {
             </table>
 
             {filteredProducts.length === 0 && (
-              <p className="p-6 text-center text-gray-400">
-                No matching lumber products found.
+              <p className="py-8 text-center text-sm text-[var(--text-muted)]">
+                No matching products found.
               </p>
             )}
           </div>
@@ -358,25 +401,25 @@ export default function AdminDashboard() {
           <h2 className="text-xl font-bold">
             Loss Report Approval Queue
           </h2>
-          <p className="mb-5 mt-1 text-sm text-gray-400">
-            Review reported damaged or missing lumber.
-            Approved losses reduce the demo inventory quantity.
+          <p className="mb-5 mt-1 text-sm text-[var(--text-secondary)]">
+            Review damaged or missing lumber.
+            Approving a report reduces the demo inventory quantity.
           </p>
 
           <div className="space-y-3">
             {reports.map((report) => (
               <div
                 key={report.id}
-                className="flex flex-col gap-4 rounded-lg border border-white/10 bg-[#11100f] p-4 lg:flex-row lg:items-center lg:justify-between"
+                className="flex flex-col gap-4 rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] p-4 lg:flex-row lg:items-center lg:justify-between"
               >
                 <div className="space-y-1">
                   <p className="font-semibold">
                     {report.product}
                   </p>
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm text-[var(--text-secondary)]">
                     {report.sku} · {report.quantity} unit(s)
                   </p>
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm text-[var(--text-secondary)]">
                     Reason: {report.reason}
                   </p>
                 </div>
@@ -385,10 +428,10 @@ export default function AdminDashboard() {
                   <span
                     className={
                       report.status === "Approved"
-                        ? "text-sm font-semibold text-emerald-400"
+                        ? "text-sm font-semibold text-[var(--accent)]"
                         : report.status === "Rejected"
-                        ? "text-sm font-semibold text-red-400"
-                        : "text-sm font-semibold text-amber-400"
+                          ? "text-sm font-semibold text-red-500"
+                          : "text-sm font-semibold text-amber-500"
                     }
                   >
                     {report.status}
@@ -397,18 +440,20 @@ export default function AdminDashboard() {
                   {report.status === "Pending" && (
                     <>
                       <button
+                        type="button"
                         onClick={() =>
                           updateReport(report.id, "Approved")
                         }
-                        className={buttonClass}
+                        className={primaryButton}
                       >
                         Approve
                       </button>
                       <button
+                        type="button"
                         onClick={() =>
                           updateReport(report.id, "Rejected")
                         }
-                        className="rounded-lg bg-red-900 px-4 py-2 text-sm font-semibold hover:bg-red-800"
+                        className="rounded-lg bg-red-800 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
                       >
                         Reject
                       </button>
@@ -420,13 +465,13 @@ export default function AdminDashboard() {
           </div>
         </section>
 
-        <footer className="text-xs text-gray-400">
-          Demo dashboard only. Product costs, quantities,
-          and loss reports are sample data. Changes reset
-          when the page reloads. Firebase integration and
-          admin authorization are not yet implemented.
-        </footer>
-      </div>
-    </main>
+        <p className="pb-4 text-xs text-[var(--text-muted)]">
+          Prototype only. Inventory costs, quantities, and loss
+          reports are sample data. Changes reset when the page
+          reloads. Firebase integration and admin authorization
+          are not yet implemented.
+        </p>
+      </main>
+    </div>
   );
 }
