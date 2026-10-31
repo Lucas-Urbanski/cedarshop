@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Menu, Search, X } from "lucide-react";
-import Navbar from "@/components/navBar";
+import Navbar from "@/components/NavBar";
 import ProductCard from "@/components/store/ProductCard";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import type { ReactNode } from "react";
