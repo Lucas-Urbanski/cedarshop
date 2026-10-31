@@ -3,18 +3,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-
-type OrderStatus = "Pending" | "In Progress" | "Delivered" | "Cancelled";
-
-interface Order {
-  id: string;
-  date: string;
-  items: string;
-  quantity: number;
-  unit: string;
-  total: number;
-  status: OrderStatus;
-}
+import type { Order, OrderStatus } from "@/types/types";
 // Just a mock data for testing 
 const initialOrders: Order[] = [
   {

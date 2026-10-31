@@ -21,7 +21,9 @@ service cloud.firestore {
           'fullName',
           'role',
           'createdAt',
-          'shippingAddress'
+          'shippingAddress',
+          'phone',
+          'company'
         ])
         && request.resource.data.uid == userId
         && request.resource.data.email == request.auth.token.email
@@ -37,11 +39,51 @@ service cloud.firestore {
         && request.resource.data.shippingAddress.keys().hasOnly([
           'street',
           'city',
-          'postalCode'
+          'postalCode',
+          'province'
         ])
         && request.resource.data.shippingAddress.street is string
         && request.resource.data.shippingAddress.city is string
-        && request.resource.data.shippingAddress.postalCode is string;
+        && request.resource.data.shippingAddress.postalCode is string
+        && (!request.resource.data.shippingAddress.keys().hasAny(['province'])
+          || request.resource.data.shippingAddress.province is string)
+        && (!request.resource.data.keys().hasAny(['phone'])
+          || request.resource.data.phone is string)
+        && (!request.resource.data.keys().hasAny(['company'])
+          || request.resource.data.company is string);
+
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'fullName',
+          'phone',
+          'company',
+          'shippingAddress'
+        ])
+        && request.resource.data.fullName is string
+        && request.resource.data.phone is string
+        && request.resource.data.company is string
+        && request.resource.data.shippingAddress is map
+        && request.resource.data.shippingAddress.keys().hasAll([
+          'street',
+          'city',
+          'postalCode',
+          'province'
+        ])
+        && request.resource.data.shippingAddress.keys().hasOnly([
+          'street',
+          'city',
+          'postalCode',
+          'province'
+        ])
+        && request.resource.data.shippingAddress.street is string
+        && request.resource.data.shippingAddress.city is string
+        && request.resource.data.shippingAddress.postalCode is string
+        && request.resource.data.shippingAddress.province is string;
     }
   }
 }

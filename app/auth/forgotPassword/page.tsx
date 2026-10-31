@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useState, FormEvent } from "react";
 import {
   authAlertClassName,
   authButtonClassName,
@@ -47,7 +47,7 @@ export default function ForgotPasswordForm() {
     >
       {success ? (
         <div className="space-y-6 text-center">
-          <p className="text-sm leading-relaxed text-porcelain/80">
+          <p className="authBodyText">
             If you registered using your email and password, you will receive a
             password reset email.
           </p>
@@ -84,7 +84,7 @@ export default function ForgotPasswordForm() {
           >
             {isLoading ? "Sending..." : "Send reset email"}
           </button>
-          <p className="text-center text-sm text-taupe">
+          <p className="authMuted authCenteredText">
             Remembered your password?{" "}
             <Link href="/auth/login" className={`ml-1 ${authLinkClassName}`}>
               Sign In

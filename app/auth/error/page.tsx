@@ -13,9 +13,9 @@ function ErrorContent() {
   return (
     <>
       {error ? (
-        <p className="text-sm text-red-300">Code error: {error}</p>
+        <p className="authFieldError">Code error: {error}</p>
       ) : (
-        <p className="text-sm text-porcelain/80">
+        <p className="authBodyText">
           An unspecified error occurred.
         </p>
       )}
@@ -31,7 +31,7 @@ export default function Page() {
     >
       <div className="space-y-6 text-center">
         <Suspense
-          fallback={<p className="text-sm text-taupe">Loading error details...</p>}
+          fallback={<p className="authMuted">Loading error details...</p>}
         >
           <ErrorContent />
         </Suspense>

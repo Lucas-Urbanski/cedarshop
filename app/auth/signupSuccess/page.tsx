@@ -7,17 +7,17 @@ export default function Page() {
   return (
     <AuthPageShell
       title="Thank you for signing up!"
-      description="Check your inbox and spam folder for the verification email. Verify your address before signing in."
+      description=""
     >
       <div className="text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-burgundy text-porcelain">
+        <div className="authSuccessIcon">
           <Mail size={24} />
         </div>
-        <div className="mt-5 flex items-center justify-center gap-2 text-sm text-burgundy-light">
+        <div className="authSuccessLabel">
           <Check size={16} />
           Account created
         </div>
-        <p className="mt-4 text-sm text-taupe">
+        <p className="authMuted authCenteredText">
           Didn&apos;t receive it? Try signing in to send another verification
           email.
         </p>

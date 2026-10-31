@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import type { UserProfile, UserRole } from "@/types/types";
-import { WorkflowCard } from "@/components/card";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { ChevronLeft, ChevronRight, Menu, Search, X } from "lucide-react";
+import Navbar from "@/components/navBar";
+import ProductCard from "@/components/store/ProductCard";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import type { ReactNode } from "react";
+import type { UserProfile, UserRole, ProductCardData } from "@/types/types";
 import { auth, db } from "@/utils/firebase";
 import { doc, getDoc } from "firebase/firestore";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { LogoutButton } from "@/components/auth/logoutButton";
-import Navbar from "@/components/NavBar";
 
 import {
   Trees,
@@ -26,10 +27,90 @@ const userRoles: Record<string, UserRole> = {
   administrator: "Administrator",
 };
 
+const workflowNavigation: {
+  label: string;
+  href: string;
+  role: UserRole;
+  icon: ReactNode;
+}[] = [
+  {
+    label: "Customer Portal",
+    href: "/portal",
+    role: "Customer",
+    icon: <ShoppingCart aria-hidden="true" />,
+  },
+  {
+    label: "Sales Counter & POS",
+    href: "/sales/dashboard",
+    role: "SalesStaff",
+    icon: <Trees aria-hidden="true" />,
+  },
+  {
+    label: "Yard & Mobile PWA",
+    href: "/yard/dashboard",
+    role: "FloorStaff",
+    icon: <ScanLine aria-hidden="true" />,
+  },
+  {
+    label: "Driver Delivery App",
+    href: "/driver/dashboard",
+    role: "Driver",
+    icon: <Truck aria-hidden="true" />,
+  },
+  {
+    label: "Admin Dashboard",
+    href: "/admin/dashboard",
+    role: "Administrator",
+    icon: <ShieldAlert aria-hidden="true" />,
+  },
+];
+
+const popularProducts: ProductCardData[] = [
+  {
+    name: "5/4x6x8ft Kiln S4S Western Red Cedar",
+    sku: "STK546K08",
+    price: "24.80",
+  },
+  {
+    name: "1x6x10ft S4S Brown MicroPro Sienna",
+    sku: "MPS160DW10",
+    price: "10.58",
+  },
+  {
+    name: "4x4x8ft Brown MicroPro Sienna Ground Contact",
+    sku: "MPS4040DW08",
+    price: "18.80",
+    lowStock: true,
+  },
+  {
+    name: "1x6x7ft T&G Clear Western Red Cedar",
+    sku: "TGC16TGCVC8",
+    price: "39.08",
+    lowStock: true,
+  },
+  {
+    name: "2x6x12ft G1S Western Red Cedar",
+    sku: "STK206KSC12",
+    price: "41.52",
+  },
+  {
+    name: "2x4x8ft SPF Dimensional Lumber",
+    sku: "SPF20408",
+    price: "6.48",
+  },
+];
+
 export default function HomePage() {
+  const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
+  const productsRowRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const availableWorkflows = workflowNavigation.filter(
+    (workflow) =>
+      workflow.role === (user?.role ?? "Customer") ||
+      user?.role === "Administrator",
+  );
 
   useEffect(() => {
     let isCurrent = true;
@@ -61,7 +142,9 @@ export default function HomePage() {
             doc(db, "users", firebaseUser.uid),
           );
           if (!profileSnapshot.exists()) {
-            throw new Error("Your Cedar Shop account profile could not be found.");
+            throw new Error(
+              "Your Cedar Shop account profile could not be found.",
+            );
           }
 
           const profile = profileSnapshot.data();
@@ -88,10 +171,17 @@ export default function HomePage() {
         } catch (error: unknown) {
           if (isCurrent) {
             setUser(null);
+            const code =
+              typeof error === "object" && error !== null && "code" in error
+                ? String((error as { code?: string }).code ?? "")
+                : "";
+
             setAuthError(
-              error instanceof Error
-                ? error.message
-                : "Could not load your account profile.",
+              code === "permission-denied"
+                ? "Could not load your account. Please try again."
+                : error instanceof Error
+                  ? error.message
+                  : "Could not load your account. Please try again.",
             );
           }
         } finally {
@@ -121,111 +211,108 @@ export default function HomePage() {
   }
 
   return (
-    <div className="appShell">
-      <Navbar user={user} />
-      <header className="homeHeader">
-        <div className="headerContent">
-          <h1 className="headerTitle">Cedar Shop LMS</h1>
-
-          <div className="headerActions">
-            {user ? (
-              <>
-                <span className="greeting">Hello, {user.name}</span>
-                <Link href="/settings" className="button buttonSettings">
-                  Settings
-                </Link>
-                <LogoutButton className="button buttonSettings" />
-              </>
-            ) : (
-              <>
-                <Link href="/auth/login" className="button buttonSettings">
-                  Sign In
-                </Link>
-                <Link href="/auth/signup" className="button buttonPrimary">
-                  Sign Up
-                </Link>
-              </>
-            )}
+    <main className="storefront">
+      <div className="storeHeader">
+        <Navbar user={user}>
+          <label className="storeSearch">
+            <Search aria-hidden="true" />
+            <input
+              type="search"
+              aria-label="Search products"
+              placeholder="Search for products..."
+            />
+          </label>
+        </Navbar>
+        <nav className="storeNavigation" aria-label="Workflow navigation">
+          <button
+            type="button"
+            className="storeMenuToggle"
+            aria-expanded={menuOpen}
+            aria-controls="store-navigation-links"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            {menuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
+            <span>{menuOpen ? "Close" : "Menu"}</span>
+          </button>
+          <div
+            id="store-navigation-links"
+            className={`storeNavigationLinks${menuOpen ? " storeNavigationOpen" : ""}`}
+          >
+            {availableWorkflows.map((item) => (
+              <Link
+                href={item.href}
+                key={item.label}
+                onClick={() => setMenuOpen(false)}
+              >
+                {item.icon}
+                {item.label}
+              </Link>
+            ))}
           </div>
+        </nav>
+      </div>
+      {authError ? (
+        <p className="storeAuthError" role="alert">
+          {authError}
+        </p>
+      ) : null}
+
+      <section className="storeHero" aria-labelledby="hero-title">
+        <div className="storeHeroContent">
+          <h1 id="hero-title">Bringing nature to you.</h1>
         </div>
-      </header>
+      </section>
 
-      {/* Main Content Area */}
-      <main className="homeMain">
-        {authError && (
-          <p role="alert" className="mb-6 rounded-md border border-red-400/30 bg-red-950/40 px-4 py-3 text-sm text-red-200">
-            {authError}
-          </p>
-        )}
-        {/* Persona Workflow Shortcuts Grid */}
-        <section>
-          <div className="grid grid-cols-1 gap-6 min-[601px]:grid-cols-2 min-[901px]:grid-cols-3">
-            {/* Customer Zone */}
-            {user?.role === "Customer" ||
-            user?.role === "Administrator" ? (
-              <WorkflowCard
-                title="Customer Portal"
-                role="Customer"
-                href="/portal"
-                icon={<ShoppingCart className="workflowCardIcon" />}
-                description="View order histories, track live jobsite deliveries, and view exact moisture-adjusted wood weight specs."
-                activeRole={user.role}
-              />
-            ) : null}
-
-            {/* Sales Zone */}
-            {user?.role === "SalesStaff" ||
-            user?.role === "Administrator" ? (
-              <WorkflowCard
-                title="Sales Counter & POS"
-                role="SalesStaff"
-                href="/sales/dashboard"
-                icon={<Trees className="workflowCardIcon" />}
-                description="Quick stock lookup across species/UOMs, build custom quotes with contractor discount tiers, and stage orders."
-                activeRole={user.role}
-              />
-            ) : null}
-
-            {/* Yard / Floor Staff PWA */}
-            {user?.role === "FloorStaff" ||
-            user?.role === "Administrator" ? (
-              <WorkflowCard
-                title="Yard & Mobile PWA"
-                role="FloorStaff"
-                href="/yard/dashboard"
-                icon={<ScanLine className="workflowCardIcon" />}
-                description="Mobile barcode scanner, kiln work-order yield tracking, and camera-enabled damage/loss tagging."
-                activeRole={user.role}
-              />
-            ) : null}
-
-            {/* Driver App */}
-            {user?.role === "Driver" ||
-            user?.role === "Administrator" ? (
-              <WorkflowCard
-                title="Driver Delivery App"
-                role="Driver"
-                href="/driver/dashboard"
-                icon={<Truck className="workflowCardIcon" />}
-                description="Assigned route planning, truck weight verification, and photo proof-of-delivery capture."
-                activeRole={user.role}
-              />
-            ) : null}
-
-            {/* Admin Management */}
-            {user?.role === "Administrator" ? (
-              <WorkflowCard
-                title="Admin Dashboard"
-                role="Administrator"
-                href="/admin/dashboard"
-                icon={<ShieldAlert className="workflowCardIcon" />}
-                description="Master cost management, staff damage-photo write-off queue, and ECI Spruce migration utility."
-                activeRole={user.role}
-              />
-            ) : null}
+      <section
+        className="popularProducts"
+        aria-labelledby="popular-products-title"
+      >
+        <h2 id="popular-products-title">Popular Products</h2>
+        <div className="popularProductsRail">
+          <div className="popularProductsTrack" ref={productsRowRef}>
+            {popularProducts.map((product) => (
+              <ProductCard key={product.sku} product={product} />
+            ))}
           </div>
-        </section>
-      </main>
-    </div>
+          <button
+            className="popularProductsPrevious"
+            type="button"
+            aria-label="Show previous popular products"
+            onClick={() =>
+              productsRowRef.current?.scrollBy({
+                left: -300,
+                behavior: "smooth",
+              })
+            }
+          >
+            <ChevronLeft aria-hidden="true" />
+          </button>
+          <button
+            className="popularProductsNext"
+            type="button"
+            aria-label="Show more popular products"
+            onClick={() =>
+              productsRowRef.current?.scrollBy({
+                left: 300,
+                behavior: "smooth",
+              })
+            }
+          >
+            <ChevronRight aria-hidden="true" />
+          </button>
+        </div>
+      </section>
+
+      <section className="storeHighlights" id="about">
+        <div className="storeSectionHeading">
+          <p className="eyebrow">The Cedar Shop</p>
+          <h2>Good materials. Helpful people.</h2>
+          <p>
+            Whether you are planning a weekend project or managing a jobsite, we
+            are here to help you get started.
+          </p>
+        </div>
+      </section>
+    </main>
   );
 }

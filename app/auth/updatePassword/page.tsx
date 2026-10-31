@@ -80,7 +80,7 @@ export default function UpdatePasswordForm() {
       description="Enter your new password below to secure your account."
     >
       {actionCode === undefined ? (
-        <p className="text-center text-sm text-taupe">Checking reset link...</p>
+        <p className="authMuted authCenteredText">Checking reset link...</p>
       ) : actionCode !== null ? (
         <form onSubmit={handleUpdatePassword} className="space-y-6">
           <div>

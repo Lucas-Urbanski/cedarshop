@@ -28,16 +28,18 @@ export function GoogleSignInButton() {
 
       setError(
         code === "auth/account-exists-with-different-credential"
-          ? "An account already exists with this email. Sign in using your existing method."
+          ? "This email is already linked to another sign-in method."
           : code === "auth/invalid-credential"
-            ? "Firebase rejected the Google sign-in credential. Check that Google is enabled in Firebase Authentication and that its OAuth configuration is correct."
+            ? "Google sign-in failed. Please try again."
             : code === "auth/operation-not-allowed"
-              ? "Google sign-in is disabled for this Firebase project. Enable the Google provider in Firebase Authentication settings."
+              ? "Google sign-in is unavailable. Please try another method."
               : code === "auth/unauthorized-domain"
-                ? "This site’s domain is not authorized for Firebase sign-in. Add it under Firebase Authentication's authorized domains."
-          : signInError instanceof Error
-            ? signInError.message
-            : "Google sign-in failed.",
+                ? "This domain is not authorized for sign-in."
+                : code === "permission-denied"
+                  ? "Google sign-in failed. Please try again."
+                  : signInError instanceof Error
+                    ? signInError.message
+                    : "Google sign-in failed.",
       );
     } finally {
       setIsLoading(false);
@@ -45,25 +47,25 @@ export function GoogleSignInButton() {
   };
 
   return (
-    <div className="mt-5 space-y-3">
-      <div className="flex items-center gap-3" aria-hidden="true">
-        <span className="h-px flex-1 bg-porcelain/20" />
-        <span className="text-xs text-taupe">OR</span>
-        <span className="h-px flex-1 bg-porcelain/20" />
+    <div className="authGoogleSection">
+      <div className="authDivider" aria-hidden="true">
+        <span />
+        <span className="authMuted">OR</span>
+        <span />
       </div>
       <button
         type="button"
         onClick={handleSignIn}
         disabled={isLoading}
-        className="flex h-[46px] w-full items-center justify-center gap-2 rounded-md border border-porcelain/25 bg-graphite-light px-4 text-sm text-porcelain transition-colors hover:bg-porcelain/10 disabled:cursor-not-allowed disabled:opacity-60"
+        className="authGoogleButton"
       >
-        <span aria-hidden="true" className="font-bold text-base text-[#4285f4]">
+        <span aria-hidden="true" className="authGoogleMark">
           G
         </span>
         {isLoading ? "Connecting to Google..." : "Continue with Google"}
       </button>
       {error && (
-        <p role="alert" className="text-sm text-red-300">
+        <p role="alert" className="authFieldError">
           {error}
         </p>
       )}

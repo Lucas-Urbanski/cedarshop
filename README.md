@@ -30,9 +30,11 @@ project:
 firebase deploy --only firestore:rules --project cedarshoplms
 ```
 
-The rules let signed-in users read their own profile and create only their own
-customer profile. Assign staff or administrator roles using a trusted Firebase
-Admin SDK environment, never from client code.
+The rules let signed-in users read and update their own profile and create only
+their own customer profile. Profile updates cannot change the account email,
+role, user ID, or creation date. Assign staff or administrator roles using a
+trusted Firebase Admin SDK environment, never from client code. Deploy the rules
+after changes so profile editing is permitted in Firestore.
 
 ## Learn More
 

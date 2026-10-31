@@ -250,7 +250,6 @@ export default function NewOrderPage() {
 
           <Link
             href="/portal/orders"
-            style={{ color: "#1c1917" }}
             className="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-center text-sm font-semibold hover:bg-gray-100"
           >
             Cancel

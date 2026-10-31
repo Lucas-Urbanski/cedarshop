@@ -1,6 +1,7 @@
 
 import type { ReactNode } from "react";
 import CustomerNavbar from "@/components/customer/CustomerNavbar";
+import RouteGuard from "@/components/auth/routeGuard";
 
 export default function PortalLayout({
   children,
@@ -8,11 +9,11 @@ export default function PortalLayout({
   children: ReactNode;
 }) {
   return (
-    <>
-      <CustomerNavbar />
-      <main className="min-h-screen">
-        {children}
-      </main>
-    </>
+    <RouteGuard allowedRoles={["Customer", "Administrator"]}>
+      <div className="portalTheme appShell">
+        <CustomerNavbar />
+        <div className="portalMain">{children}</div>
+      </div>
+    </RouteGuard>
   );
 }

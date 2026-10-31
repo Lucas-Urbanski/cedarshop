@@ -1,16 +1,15 @@
-
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Trees } from "lucide-react";
+import BrandLogo from "@/components/brandLogo";
 
 const navLinks = [
   { label: "Dashboard", href: "/portal" },
   { label: "Orders", href: "/portal/orders" },
   { label: "New Order", href: "/portal/orders/new" },
   { label: "Deliveries", href: "/portal/deliveries" },
-  { label: "Profile", href: "/portal/profile" },
+  { label: "Settings", href: "/settings" },
 ];
 
 export default function CustomerNavbar() {
@@ -19,19 +18,19 @@ export default function CustomerNavbar() {
   return (
     <header className="siteHeader">
       <div className="headerInner">
-        <Link href="/portal" className="brand">
-          <div className="brandIcon">
-            <Trees className="iconLarge" />
-          </div>
-
-          <span className="brandName">
-            The Cedar Shop LMS
-          </span>
+        <Link
+          href="/"
+          className="brand brandLink"
+          aria-label="Cedar Shop portal"
+        >
+          <BrandLogo />
         </Link>
 
         <nav className="headerActions" aria-label="Customer navigation">
           {navLinks.map((link) => {
-            const isActive = pathname === link.href;
+            const isActive =
+              pathname === link.href ||
+              (link.href === "/settings" && pathname.startsWith("/settings/"));
 
             return (
               <Link
@@ -39,9 +38,7 @@ export default function CustomerNavbar() {
                 href={link.href}
                 aria-current={isActive ? "page" : undefined}
                 className={
-                  isActive
-                    ? "button buttonPrimary"
-                    : "button buttonSettings"
+                  isActive ? "button buttonPrimary" : "button buttonSettings"
                 }
               >
                 {link.label}

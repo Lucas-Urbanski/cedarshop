@@ -1,11 +1,7 @@
-import type { ReactNode } from "react";
 import Link from "next/link";
-
-type AuthPageShellProps = {
-  title: string;
-  description: string;
-  children: ReactNode;
-};
+import Image from "next/image";
+import BrandLogo from "@/images/CedarShopLogo.png";
+import type { AuthPageShellProps } from "@/types/types";
 
 export function AuthPageShell({
   title,
@@ -13,19 +9,30 @@ export function AuthPageShell({
   children,
 }: AuthPageShellProps) {
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center bg-graphite px-5 py-12 font-sans text-porcelain">
-      <Link
-        href="/"
-        aria-label="Cedar Shop home"
-        className="text-3xl font-semibold tracking-tight text-porcelain"
-      >
-        Cedar Shop
-      </Link>
-      <div className="mt-12 max-w-md text-center">
-        <h1 className="text-[28px] font-semibold leading-tight">{title}</h1>
-        <p className="mt-4 text-sm leading-relaxed text-taupe">{description}</p>
-      </div>
-      <section className="mt-6 w-full max-w-[360px]">{children}</section>
+    <main className="authPage">
+      <section className="authCard">
+        <Link
+          href="/"
+          aria-label="Cedar Shop home"
+          className="authBrand"
+        >
+          <Image
+            src={BrandLogo}
+            alt="Cedar Shop"
+            width={200}
+            height={200}
+            priority
+            className="authLogo"
+          />
+        </Link>
+
+        <div className="authHeading">
+          <h1>{title}</h1>
+          {description ? <p>{description}</p> : null}
+        </div>
+
+        <div className="authContent">{children}</div>
+      </section>
     </main>
   );
 }

@@ -1,48 +1,44 @@
 "use client";
 
 import Link from "next/link";
-import { Trees } from "lucide-react";
-import type { UserProfile } from "@/types/types";
+import Image from "next/image";
+import BrandLogo from "@/images/CedarShopLogo.png";
+import type { NavbarProps } from "@/types/types";
 
-interface NavbarProps {
-  user: UserProfile | null;
-}
-
-export default function Navbar({ user }: NavbarProps) {
+export default function Navbar({ user, children }: NavbarProps) {
   return (
     <header className="siteHeader">
       <div className="headerInner">
-        <Link href="/" className="brand">
-          <div className="brandIcon">
-            <Trees className="iconLarge" />
-          </div>
-
-          <span className="brandName">
-            The Cedar Shop LMS
-          </span>
+        <Link href="/" aria-label="Cedar Shop home">
+          <Image
+            src={BrandLogo}
+            alt="Cedar Shop"
+            width={120}
+            height={120}
+            priority
+            className="headerLogo"
+          />
         </Link>
 
-        <div>
-          {user ? (
-            <div className="headerActions">
-              <span className="greeting">
-                Hello, {user.name}
-              </span>
+        {children}
 
-              <Link
-                href="/settings"
-                className="button buttonSettings"
-              >
+        <div className="headerActions">
+          {user ? <span>Hello, {user.name.split(" ")[0]}</span> : null}
+          {user ? (
+            <>
+              <Link href="/settings" className="button buttonSettings">
                 Settings
               </Link>
-            </div>
+            </>
           ) : (
-            <Link
-              href="/login"
-              className="button buttonPrimary"
-            >
-              Sign In
-            </Link>
+            <>
+              <Link href="/auth/login" className="button buttonSettings">
+                Sign In
+              </Link>
+              <Link href="/auth/signup" className="button buttonPrimary">
+                Sign Up
+              </Link>
+            </>
           )}
         </div>
       </div>

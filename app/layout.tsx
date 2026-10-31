@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cedar Shop LMS",
+  title: "The Cedar Shop",
   description: "Cedar Shop Lumber Management System",
 };
 
@@ -26,6 +26,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable}`}
     >
       <body>

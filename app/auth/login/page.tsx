@@ -18,6 +18,7 @@ import { AuthPageShell } from "@/components/auth/authPageShell";
 import { GoogleSignInButton } from "@/components/auth/googleSignInButton";
 import { PasswordInput } from "@/components/auth/passwordInput";
 import { auth } from "@/utils/firebase";
+import type { SignInFormValues } from "@/types/types";
 import {
   sendEmailVerification,
   signInWithEmailAndPassword,
@@ -28,8 +29,6 @@ const signInSchema = z.object({
   email: z.email("Please enter a valid email address."),
   password: z.string().min(1, "Please enter your password."),
 });
-
-type SignInFormValues = z.infer<typeof signInSchema>;
 
 export default function LoginForm() {
   const [authError, setAuthError] = useState<string | null>(null);
@@ -58,7 +57,7 @@ export default function LoginForm() {
           await signOut(auth);
         }
         throw new Error(
-          "Your email is not verified. Firebase accepted a request to send another verification email, but delivery is not confirmed. Check that the account email is correct, then check your inbox and spam folder.",
+          "Please verify your email before signing in. Check your inbox for the verification link.",
         );
       }
       router.push("/");
@@ -76,10 +75,12 @@ export default function LoginForm() {
         code === "auth/invalid-credential" ||
           code === "auth/wrong-password" ||
           code === "auth/user-not-found"
-          ? "Email or password is incorrect. If you created your account with Google, use Continue with Google."
-          : error instanceof Error
-            ? error.message
-            : "Sign in failed.",
+        ? "Incorrect email or password."
+          : code === "permission-denied"
+          ? "Sign-in failed. Please try again."
+            : error instanceof Error
+              ? error.message
+              : "Sign in failed.",
       );
     }
   };
@@ -87,7 +88,7 @@ export default function LoginForm() {
   return (
     <AuthPageShell
       title="Welcome back"
-      description="Sign in to continue creating music."
+      description=""
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
         <div>
@@ -155,7 +156,7 @@ export default function LoginForm() {
 
         <GoogleSignInButton />
 
-        <p className="mt-4 text-center text-sm text-taupe">
+        <p className="authMuted authCenteredText">
         Don&apos;t have an account?{" "}
         <Link href="/auth/signup" className={`ml-1 ${authLinkClassName}`}>
           Sign Up

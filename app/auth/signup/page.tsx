@@ -18,14 +18,13 @@ import { AuthPageShell } from "@/components/auth/authPageShell";
 import { GoogleSignInButton } from "@/components/auth/googleSignInButton";
 import { PasswordInput } from "@/components/auth/passwordInput";
 import { registerShopUser } from "@/utils/firebase";
+import type { SignUpFormValues } from "@/types/types";
 
 const signUpSchema = z.object({
   fullName: z.string().trim().min(1, "Please enter your name."),
   email: z.email("Please enter a valid email address."),
   password: z.string().min(6, "Password must be at least 6 characters."),
 });
-
-type SignUpFormValues = z.infer<typeof signUpSchema>;
 
 export default function SignUpForm() {
   const [authError, setAuthError] = useState<string | null>(null);
@@ -54,7 +53,7 @@ export default function SignUpForm() {
   return (
     <AuthPageShell
       title="Create an account"
-      description="Start creating music with Motif."
+      description=""
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
         <div>
@@ -135,7 +134,7 @@ export default function SignUpForm() {
 
       <GoogleSignInButton />
 
-      <p className="mt-4 text-center text-sm text-taupe">
+      <p className="authMuted authCenteredText">
         Already have an account?{" "}
         <Link href="/auth/login" className={`ml-1 ${authLinkClassName}`}>
           Sign In

@@ -30,30 +30,51 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
+function getPermissionMessage(error: unknown, context: string) {
+  const code =
+    typeof error === "object" && error !== null && "code" in error
+      ? String((error as { code?: string }).code ?? "")
+      : "";
+
+  if (code === "permission-denied") {
+    return `${context} failed. Please try again.`;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "The request could not be completed.";
+}
+
 export async function signInWithGoogle() {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
 
-  const { user } = await signInWithPopup(auth, provider);
-  const profileRef = doc(db, "users", user.uid);
-  const profileSnapshot = await getDoc(profileRef);
+  try {
+    const { user } = await signInWithPopup(auth, provider);
+    const profileRef = doc(db, "users", user.uid);
+    const profileSnapshot = await getDoc(profileRef);
 
-  if (!profileSnapshot.exists()) {
-    await setDoc(profileRef, {
-      uid: user.uid,
-      email: user.email,
-      fullName: user.displayName ?? "",
-      role: "customer",
-      createdAt: new Date(),
-      shippingAddress: {
-        street: "",
-        city: "",
-        postalCode: "",
-      },
-    });
+    if (!profileSnapshot.exists()) {
+      await setDoc(profileRef, {
+        uid: user.uid,
+        email: user.email,
+        fullName: user.displayName ?? "",
+        role: "customer",
+        createdAt: new Date(),
+        shippingAddress: {
+          street: "",
+          city: "",
+          postalCode: "",
+        },
+      });
+    }
+
+    return user;
+  } catch (error: unknown) {
+    throw new Error(getPermissionMessage(error, "Google sign-in"));
   }
-
-  return user;
 }
 
 export async function registerShopUser(
@@ -78,6 +99,8 @@ export async function registerShopUser(
         postalCode: "",
       },
     });
+  } catch (error: unknown) {
+    throw new Error(getPermissionMessage(error, "Account setup"));
   } finally {
     await signOut(auth);
   }

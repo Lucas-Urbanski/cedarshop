@@ -2,23 +2,7 @@
 "use client";
 
 import { useState } from "react";
-
-type DeliveryStatus =
-  | "Scheduled"
-  | "In Transit"
-  | "Delivered"
-  | "Delayed";
-
-interface Delivery {
-  id: string;
-  orderId: string;
-  date: string;
-  address: string;
-  items: string;
-  status: DeliveryStatus;
-  driver: string;
-  trackingNote: string;
-}
+import type { Delivery, DeliveryStatus } from "@/types/types";
 
 const initialDeliveries: Delivery[] = [
   {

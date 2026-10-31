@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 export type UserRole =
   | "Customer"
   | "Driver"
@@ -11,13 +13,77 @@ export interface UserProfile {
   email: string;
 }
 
-export interface WorkflowCardProps {
+export interface NavbarProps {
+  user: UserProfile | null;
+  children?: ReactNode;
+}
+
+export interface ProductCardData {
+  name: string;
+  sku: string;
+  price: string;
+  lowStock?: boolean;
+}
+
+export interface ProductCardProps {
+  product: ProductCardData;
+}
+
+export interface AuthPageShellProps {
   title: string;
-  role: UserRole;
-  href: string;
-  icon: React.ReactNode;
   description: string;
-  activeRole?: UserRole;
+  children: ReactNode;
+}
+
+export interface CustomerProfile {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  company: string;
+  address: string;
+  city: string;
+  province: string;
+  postalCode: string;
+}
+
+export type OrderStatus = "Pending" | "In Progress" | "Delivered" | "Cancelled";
+
+export interface Order {
+  id: string;
+  date: string;
+  items: string;
+  quantity: number;
+  unit: string;
+  total: number;
+  status: OrderStatus;
+}
+
+export type DeliveryStatus =
+  | "Scheduled"
+  | "In Transit"
+  | "Delivered"
+  | "Delayed";
+
+export interface Delivery {
+  id: string;
+  orderId: string;
+  date: string;
+  address: string;
+  items: string;
+  status: DeliveryStatus;
+  driver: string;
+  trackingNote: string;
+}
+
+export interface SignInFormValues {
+  email: string;
+  password: string;
+}
+
+export interface SignUpFormValues {
+  fullName: string;
+  email: string;
+  password: string;
 }
 
 export type Theme = "light" | "dark";
