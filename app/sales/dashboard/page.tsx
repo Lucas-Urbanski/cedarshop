@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Navbar from "@/components/NavBar";
+import Navbar from "@/components/navBar";
 
 type Product = {
   id: number;
