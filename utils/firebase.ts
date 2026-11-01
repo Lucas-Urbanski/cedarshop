@@ -32,8 +32,11 @@ export const db = getFirestore(app);
 
 function getPermissionMessage(error: unknown, context: string) {
   const code =
-    typeof error === "object" && error !== null && "code" in error
-      ? String((error as { code?: string }).code ?? "")
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof error.code === "string"
+      ? error.code
       : "";
 
   if (code === "permission-denied") {

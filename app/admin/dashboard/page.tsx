@@ -3,27 +3,10 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import Navbar from "@/components/NavBar";
+import Navbar from "@/components/navBar";
+import type { AdminLossReport, AdminProduct } from "@/types/types";
 
-type Product = {
-  id: number;
-  sku: string;
-  name: string;
-  price: number;
-  cost: number;
-  quantity: number;
-};
-
-type LossReport = {
-  id: number;
-  sku: string;
-  product: string;
-  quantity: number;
-  reason: string;
-  status: "Pending" | "Approved" | "Rejected";
-};
-
-const initialProducts: Product[] = [
+const initialProducts: AdminProduct[] = [
   {
     id: 1,
     sku: "CED-001",
@@ -58,7 +41,7 @@ const initialProducts: Product[] = [
   },
 ];
 
-const initialReports: LossReport[] = [
+const initialReports: AdminLossReport[] = [
   {
     id: 101,
     sku: "CED-001",

@@ -1,18 +1,15 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth } from "@/utils/firebase";
 import { signOut } from "firebase/auth";
+import type { LogoutButtonProps } from "@/types/types";
 
 export function LogoutButton({
   className = "inline-flex h-8 items-center rounded-md border border-white/15 bg-white/5 px-3 text-xs font-medium text-porcelain transition hover:bg-white/10",
   children = "Logout",
-}: {
-  className?: string;
-  children?: ReactNode;
-}) {
+}: LogoutButtonProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 

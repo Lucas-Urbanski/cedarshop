@@ -5,9 +5,9 @@ import {
   useContext,
   useEffect,
   useState,
-  type ReactNode,
 } from "react";
 
+import type { ChildrenProps, YardContextValue } from "@/types/types";
 import type { YardData } from "@/types/yard";
 import {
   initialYardData,
@@ -15,19 +15,9 @@ import {
   yardStorageKey,
 } from "@/utils/yardData";
 
-interface YardContextValue {
-  data: YardData;
-  ready: boolean;
-  notice: string;
-  update: (
-    change: (current: YardData) => YardData,
-    message: string,
-  ) => boolean;
-}
-
 const YardContext = createContext<YardContextValue | null>(null);
 
-export function YardProvider({ children }: { children: ReactNode }) {
+export function YardProvider({ children }: ChildrenProps) {
   const [data, setData] = useState(initialYardData);
   const [ready, setReady] = useState(false);
   const [notice, setNotice] = useState("");

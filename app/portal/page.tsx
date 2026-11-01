@@ -1,3 +1,5 @@
+import type { SummaryCardProps } from "@/types/types";
+
 // Just a mock test data before connecting to firbase db
 const orders = [
   {
@@ -134,11 +136,7 @@ function SummaryCard({
   title,
   value,
   description,
-}: {
-  title: string;
-  value: string;
-  description: string;
-}) {
+}: SummaryCardProps) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6">
       <p className="text-sm font-medium text-gray-500">{title}</p>

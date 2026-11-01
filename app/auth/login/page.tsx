@@ -15,6 +15,7 @@ import {
   authLinkClassName,
 } from "@/components/auth/authFields";
 import { AuthPageShell } from "@/components/auth/authPageShell";
+import { GuestOnly } from "@/components/auth/guestOnly";
 import { GoogleSignInButton } from "@/components/auth/googleSignInButton";
 import { PasswordInput } from "@/components/auth/passwordInput";
 import { auth } from "@/utils/firebase";
@@ -86,82 +87,85 @@ export default function LoginForm() {
   };
 
   return (
-    <AuthPageShell
-      title="Welcome back"
-      description=""
-    >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
-        <div>
-          <label htmlFor="email" className={authLabelClassName}>
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            placeholder="Enter your email"
-            {...register("email")}
-            aria-invalid={!!errors.email}
-            aria-describedby={errors.email ? "email-error" : undefined}
-            className={authInputClassName}
-          />
-          {errors.email?.message && (
-            <p id="email-error" className={authFieldErrorClassName}>
-              {errors.email.message}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label htmlFor="password" className={authLabelClassName}>
-            Password
-          </label>
-          <PasswordInput
-            id="password"
-            autoComplete="current-password"
-            placeholder="Enter your password"
-            {...register("password")}
-            aria-invalid={!!errors.password}
-            aria-describedby={errors.password ? "password-error" : undefined}
-          />
-          {errors.password?.message && (
-            <p id="password-error" className={authFieldErrorClassName}>
-              {errors.password.message}
-            </p>
-          )}
-          <div className="mt-1.5 text-right">
-            <Link
-              href="/auth/forgotPassword"
-              className={`text-[13px] ${authLinkClassName}`}
-            >
-              Forgot password?
-            </Link>
-          </div>
-        </div>
-
-        {authError && (
-          <p role="alert" className={authAlertClassName}>
-            {authError}
-          </p>
-        )}
-
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className={`!mt-3 ${authButtonClassName}`}
+    <GuestOnly>
+      <AuthPageShell title="Welcome back" description="">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-6"
+          noValidate
         >
-          {isSubmitting ? "Signing In..." : "Sign In"}
-        </button>
-      </form>
+          <div>
+            <label htmlFor="email" className={authLabelClassName}>
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder="Enter your email"
+              {...register("email")}
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? "email-error" : undefined}
+              className={authInputClassName}
+            />
+            {errors.email?.message && (
+              <p id="email-error" className={authFieldErrorClassName}>
+                {errors.email.message}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="password" className={authLabelClassName}>
+              Password
+            </label>
+            <PasswordInput
+              id="password"
+              autoComplete="current-password"
+              placeholder="Enter your password"
+              {...register("password")}
+              aria-invalid={!!errors.password}
+              aria-describedby={errors.password ? "password-error" : undefined}
+            />
+            {errors.password?.message && (
+              <p id="password-error" className={authFieldErrorClassName}>
+                {errors.password.message}
+              </p>
+            )}
+            <div className="mt-1.5 text-right">
+              <Link
+                href="/auth/forgotPassword"
+                className={`text-[13px] ${authLinkClassName}`}
+              >
+                Forgot password?
+              </Link>
+            </div>
+          </div>
+
+          {authError && (
+            <p role="alert" className={authAlertClassName}>
+              {authError}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className={`!mt-3 ${authButtonClassName}`}
+          >
+            {isSubmitting ? "Signing In..." : "Sign In"}
+          </button>
+        </form>
 
         <GoogleSignInButton />
 
         <p className="authMuted authCenteredText">
-        Don&apos;t have an account?{" "}
-        <Link href="/auth/signup" className={`ml-1 ${authLinkClassName}`}>
-          Sign Up
-        </Link>
-      </p>
-    </AuthPageShell>
+          Don&apos;t have an account?{" "}
+          <Link href="/auth/signup" className={`ml-1 ${authLinkClassName}`}>
+            Sign Up
+          </Link>
+        </p>
+      </AuthPageShell>
+    </GuestOnly>
   );
 }

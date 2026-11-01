@@ -6,9 +6,10 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/components/themeProvider";
 import { LogoutButton } from "@/components/auth/logoutButton";
-import Navbar from "@/components/NavBar";
+import Navbar from "@/components/navBar";
 import { auth, db } from "@/utils/firebase";
-import type { CustomerProfile, UserProfile, UserRole } from "@/types/types";
+import type { CustomerProfile, UserProfile } from "@/types/types";
+import { getUserRole } from "@/utils/userProfile";
 
 const emptyProfile: CustomerProfile = {
   firstName: "",
@@ -19,14 +20,6 @@ const emptyProfile: CustomerProfile = {
   city: "",
   province: "",
   postalCode: "",
-};
-
-const userRoles: Record<string, UserRole> = {
-  customer: "Customer",
-  driver: "Driver",
-  floorstaff: "FloorStaff",
-  salesstaff: "SalesStaff",
-  administrator: "Administrator",
 };
 
 function readString(value: unknown): string {
@@ -99,10 +92,7 @@ export default function SettingsPage() {
         }
 
         const data = snapshot.data();
-        const role =
-          typeof data.role === "string"
-            ? userRoles[data.role.toLowerCase().replace(/\s+/g, "")]
-            : undefined;
+        const role = getUserRole(data.role);
         if (!role) {
           throw new Error("Your account role could not be recognized.");
         }

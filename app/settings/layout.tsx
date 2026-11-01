@@ -1,10 +1,6 @@
-import type { ReactNode } from "react";
 import RouteGuard from "@/components/auth/routeGuard";
+import type { ChildrenProps } from "@/types/types";
 
-export default function SettingsLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export default function SettingsLayout({ children }: ChildrenProps) {
   return <RouteGuard>{children}</RouteGuard>;
 }

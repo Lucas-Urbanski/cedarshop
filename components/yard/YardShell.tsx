@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 
 import {
   LayoutDashboard,
@@ -21,6 +21,7 @@ import {
 
 import logo from "@/images/CedarShopLogo.png";
 import { useTheme } from "@/components/themeProvider";
+import type { ChildrenProps } from "@/types/types";
 import { useYard } from "./YardProvider";
 
 const links = [
@@ -43,7 +44,7 @@ const links = [
   },
 ];
 
-export default function YardShell({ children }: { children: ReactNode }) {
+export default function YardShell({ children }: ChildrenProps) {
   const path = usePathname().replace(/\/$/, "");
   const { theme, toggleTheme } = useTheme();
   const { notice, ready } = useYard();

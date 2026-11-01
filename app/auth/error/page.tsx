@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { authButtonClassName } from "@/components/auth/authFields";
 import { AuthPageShell } from "@/components/auth/authPageShell";
+import { GuestOnly } from "@/components/auth/guestOnly";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
@@ -25,20 +26,22 @@ function ErrorContent() {
 
 export default function Page() {
   return (
-    <AuthPageShell
-      title="Sorry, something went wrong."
-      description="We couldn’t complete that sign-in request."
-    >
-      <div className="space-y-6 text-center">
-        <Suspense
-          fallback={<p className="authMuted">Loading error details...</p>}
-        >
-          <ErrorContent />
-        </Suspense>
-        <Link href="/auth/login" className={authButtonClassName}>
-          Return to sign in
-        </Link>
-      </div>
-    </AuthPageShell>
+    <GuestOnly>
+      <AuthPageShell
+        title="Sorry, something went wrong."
+        description="We couldn’t complete that sign-in request."
+      >
+        <div className="space-y-6 text-center">
+          <Suspense
+            fallback={<p className="authMuted">Loading error details...</p>}
+          >
+            <ErrorContent />
+          </Suspense>
+          <Link href="/auth/login" className={authButtonClassName}>
+            Return to sign in
+          </Link>
+        </div>
+      </AuthPageShell>
+    </GuestOnly>
   );
 }

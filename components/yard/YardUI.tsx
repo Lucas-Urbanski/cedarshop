@@ -1,19 +1,20 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
+import type {
+  ChildrenProps,
+  YardBadgeProps,
+  YardDialogProps,
+  YardHeadingProps,
+} from "@/types/types";
 
 export function YardHeading({
   eyebrow,
   title,
   description,
   children,
-}: {
-  eyebrow: string;
-  title: string;
-  description: string;
-  children?: ReactNode;
-}) {
+}: YardHeadingProps) {
   return (
     <div className="yard-heading">
       <div>
@@ -30,10 +31,7 @@ export function YardHeading({
 export function YardBadge({
   children,
   tone = "green",
-}: {
-  children: ReactNode;
-  tone?: "green" | "amber" | "muted";
-}) {
+}: YardBadgeProps) {
   return <span className={`yard-badge ${tone}`}>{children}</span>;
 }
 
@@ -41,11 +39,7 @@ export function YardDialog({
   title,
   children,
   onClose,
-}: {
-  title: string;
-  children: ReactNode;
-  onClose: () => void;
-}) {
+}: YardDialogProps) {
   const dialog = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -80,7 +74,7 @@ export function YardDialog({
   );
 }
 
-export function EmptyState({ children }: { children: ReactNode }) {
+export function EmptyState({ children }: ChildrenProps) {
   return <div className="yard-empty">{children}</div>;
 }
 

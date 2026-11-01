@@ -2,37 +2,31 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Menu, Search, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Menu,
+  ScanLine,
+  Search,
+  ShieldAlert,
+  ShoppingCart,
+  Trees,
+  Truck,
+  X,
+} from "lucide-react";
 import Navbar from "@/components/navBar";
 import ProductCard from "@/components/store/ProductCard";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import type { ReactNode } from "react";
-import type { UserProfile, UserRole, ProductCardData } from "@/types/types";
+import type {
+  ProductCardData,
+  UserProfile,
+  WorkflowNavigationItem,
+} from "@/types/types";
 import { auth, db } from "@/utils/firebase";
+import { getUserRole } from "@/utils/userProfile";
 import { doc, getDoc } from "firebase/firestore";
 
-import {
-  Trees,
-  Truck,
-  ScanLine,
-  ShoppingCart,
-  ShieldAlert,
-} from "lucide-react";
-
-const userRoles: Record<string, UserRole> = {
-  customer: "Customer",
-  driver: "Driver",
-  floorstaff: "FloorStaff",
-  salesstaff: "SalesStaff",
-  administrator: "Administrator",
-};
-
-const workflowNavigation: {
-  label: string;
-  href: string;
-  role: UserRole;
-  icon: ReactNode;
-}[] = [
+const workflowNavigation: WorkflowNavigationItem[] = [
   {
     label: "Customer Portal",
     href: "/portal",
@@ -108,29 +102,37 @@ export default function HomePage() {
   const [authError, setAuthError] = useState<string | null>(null);
   const availableWorkflows = workflowNavigation.filter(
     (workflow) =>
-      workflow.role === (user?.role ?? "Customer") ||
-      user?.role === "Administrator",
+      user !== null &&
+      (workflow.role === user.role || user.role === "Administrator"),
   );
 
   useEffect(() => {
     let isCurrent = true;
+    let authCheck = 0;
 
     const unsubscribe = onAuthStateChanged(
       auth,
       async (firebaseUser) => {
+        const currentCheck = ++authCheck;
+        const isLatestCheck = () =>
+          isCurrent && currentCheck === authCheck;
+
+        setLoading(true);
+        setAuthError(null);
+
         if (!firebaseUser || !firebaseUser.emailVerified) {
           if (firebaseUser) {
             try {
               await signOut(auth);
             } catch (error: unknown) {
-              if (isCurrent) {
+              if (isLatestCheck()) {
                 setAuthError(
                   error instanceof Error ? error.message : "Sign out failed.",
                 );
               }
             }
           }
-          if (isCurrent) {
+          if (isLatestCheck()) {
             setUser(null);
             setLoading(false);
           }
@@ -148,15 +150,12 @@ export default function HomePage() {
           }
 
           const profile = profileSnapshot.data();
-          const roleValue =
-            typeof profile.role === "string"
-              ? userRoles[profile.role.toLowerCase().replace(/\s+/g, "")]
-              : undefined;
+          const roleValue = getUserRole(profile.role);
           if (!roleValue) {
             throw new Error("Your Cedar Shop account role is not recognized.");
           }
 
-          if (isCurrent) {
+          if (isLatestCheck()) {
             setUser({
               name:
                 (typeof profile.fullName === "string" && profile.fullName) ||
@@ -169,11 +168,14 @@ export default function HomePage() {
             setAuthError(null);
           }
         } catch (error: unknown) {
-          if (isCurrent) {
+          if (isLatestCheck()) {
             setUser(null);
             const code =
-              typeof error === "object" && error !== null && "code" in error
-                ? String((error as { code?: string }).code ?? "")
+              typeof error === "object" &&
+              error !== null &&
+              "code" in error &&
+              typeof error.code === "string"
+                ? error.code
                 : "";
 
             setAuthError(
@@ -185,12 +187,13 @@ export default function HomePage() {
             );
           }
         } finally {
-          if (isCurrent) setLoading(false);
+          if (isLatestCheck()) setLoading(false);
         }
       },
       (error) => {
         if (isCurrent) {
           setAuthError(error.message);
+          setUser(null);
           setLoading(false);
         }
       },
@@ -198,6 +201,7 @@ export default function HomePage() {
 
     return () => {
       isCurrent = false;
+      authCheck += 1;
       unsubscribe();
     };
   }, []);

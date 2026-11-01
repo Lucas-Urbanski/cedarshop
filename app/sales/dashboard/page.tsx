@@ -4,21 +4,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import Navbar from "@/components/navBar";
+import type { SalesProduct, SalesQuoteItem } from "@/types/types";
 
-type Product = {
-  id: number;
-  sku: string;
-  name: string;
-  price: number;
-  quantity: number;
-};
-
-type QuoteItem = {
-  product: Product;
-  quantity: number;
-};
-
-const products: Product[] = [
+const products: SalesProduct[] = [
   {
     id: 1,
     sku: "CED-001",
@@ -59,7 +47,7 @@ const primaryButton =
 
 export default function SalesDashboard() {
   const [search, setSearch] = useState("");
-  const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([]);
+  const [quoteItems, setQuoteItems] = useState<SalesQuoteItem[]>([]);
   const [discount, setDiscount] = useState(0);
   const [customerName, setCustomerName] = useState("");
 
@@ -86,7 +74,7 @@ export default function SalesDashboard() {
   const discountAmount = subtotal * (safeDiscount / 100);
   const total = subtotal - discountAmount;
 
-  function addToQuote(product: Product) {
+  function addToQuote(product: SalesProduct) {
     setQuoteItems((current) => {
       const existing = current.find(
         (item) => item.product.id === product.id

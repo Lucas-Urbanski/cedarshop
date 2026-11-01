@@ -20,16 +20,12 @@ import {
   YardBadge,
   shortDate,
 } from "@/components/yard/YardUI";
-
-interface InstallPrompt extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
+import type { YardInstallPrompt } from "@/types/types";
 
 export default function YardMobilePage() {
   const { data, update } = useYard();
 
-  const [install, setInstall] = useState<InstallPrompt | null>(null);
+  const [install, setInstall] = useState<YardInstallPrompt | null>(null);
   const [installed, setInstalled] = useState(false);
   const [help, setHelp] = useState(false);
 
@@ -38,7 +34,7 @@ export default function YardMobilePage() {
 
     const capturePrompt = (event: Event) => {
       event.preventDefault();
-      setInstall(event as InstallPrompt);
+      setInstall(event as YardInstallPrompt);
     };
 
     const installationFinished = () => {
