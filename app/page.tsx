@@ -47,7 +47,7 @@ const workflowNavigation: {
   },
   {
     label: "Yard & Mobile PWA",
-    href: "/yard/dashboard",
+    href: "/yard",
     role: "FloorStaff",
     icon: <ScanLine aria-hidden="true" />,
   },
