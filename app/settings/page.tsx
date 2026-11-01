@@ -6,7 +6,7 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/components/themeProvider";
 import { LogoutButton } from "@/components/auth/logoutButton";
-import Navbar from "@/components/navBar";
+import Navbar from "@/components/NavBar";
 import { auth, db } from "@/utils/firebase";
 import type { CustomerProfile, UserProfile, UserRole } from "@/types/types";
 
