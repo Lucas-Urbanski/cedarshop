@@ -38,6 +38,7 @@ export default function CustomerNavbar() {
                 key={link.href}
                 href={link.href}
                 aria-current={isActive ? "page" : undefined}
+                data-active={isActive ? "true" : undefined}
                 className={
                   isActive ? "button buttonPrimary" : "button buttonSettings"
                 }

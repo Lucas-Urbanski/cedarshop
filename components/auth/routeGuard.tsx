@@ -7,7 +7,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import type { RouteGuardProps } from "@/types/types";
 import { auth, db } from "@/utils/firebase";
-import { getUserRole } from "@/utils/userProfile";
+import { getRoleHome, getUserRole } from "@/utils/userProfile";
 
 export default function RouteGuard({
   children,
@@ -31,7 +31,7 @@ export default function RouteGuard({
         setError(null);
 
         if (!firebaseUser?.emailVerified) {
-          router.replace("/");
+          router.replace("/auth/login");
           return;
         }
 
@@ -44,7 +44,9 @@ export default function RouteGuard({
             !role ||
             (allowedRoles && !allowedRoles.includes(role))
           ) {
-            if (isLatestCheck()) router.replace("/");
+            if (isLatestCheck()) {
+              router.replace(role ? getRoleHome(role) : "/");
+            }
             return;
           }
 

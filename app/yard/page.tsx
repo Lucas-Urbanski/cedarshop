@@ -54,7 +54,7 @@ export default function YardOverview() {
     {
       label: "Loss reports",
       value: data.losses.length,
-      note: "Awaiting review · local demo",
+      note: "Awaiting review",
       icon: MapPin,
     },
   ];
@@ -86,7 +86,7 @@ export default function YardOverview() {
             Keep your crew in the loop.
           </p>
 
-          <Link href="/yard/work-orders">
+          <Link href="/yard/workOrders">
             View work orders <ArrowRight size={18} />
           </Link>
         </div>
@@ -120,7 +120,7 @@ export default function YardOverview() {
               <p>Next up in the workshop</p>
             </div>
 
-            <Link href="/yard/work-orders">
+            <Link href="/yard/workOrders">
               View all <ArrowUpRight size={16} />
             </Link>
           </div>
@@ -129,7 +129,7 @@ export default function YardOverview() {
             {activeOrders.length ? (
               activeOrders.slice(0, 3).map((order) => (
                 <Link
-                  href="/yard/work-orders"
+                  href="/yard/workOrders"
                   className="yard-order-row"
                   key={order.id}
                 >
@@ -209,10 +209,10 @@ export default function YardOverview() {
         <div className="yard-section-head">
           <div>
             <h2>Recent activity</h2>
-            <p>Changes made in this demo workspace</p>
+            <p>Recent changes across the yard workspace</p>
           </div>
 
-          <YardBadge tone="muted">Device only</YardBadge>
+          <YardBadge tone="muted">Live updates</YardBadge>
         </div>
 
         {data.activity.slice(0, 4).map((item) => (

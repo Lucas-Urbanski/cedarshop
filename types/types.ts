@@ -68,18 +68,18 @@ export interface CustomerProfile {
 }
 
 export interface AdminProduct {
-  id: number;
+  id: string;
   sku: string;
   name: string;
   price: number;
-  cost: number;
+  cost: number | null;
   quantity: number;
 }
 
 export type AdminLossReportStatus = "Pending" | "Approved" | "Rejected";
 
 export interface AdminLossReport {
-  id: number;
+  id: string;
   sku: string;
   product: string;
   quantity: number;
@@ -88,7 +88,7 @@ export interface AdminLossReport {
 }
 
 export interface SalesProduct {
-  id: number;
+  id: string;
   sku: string;
   name: string;
   price: number;
@@ -128,7 +128,10 @@ export interface YardContextValue {
   data: YardData;
   ready: boolean;
   notice: string;
-  update: (change: (current: YardData) => YardData, message: string) => boolean;
+  update: (
+    change: (current: YardData) => YardData,
+    message: string,
+  ) => Promise<boolean>;
 }
 
 export interface YardInstallPrompt extends Event {

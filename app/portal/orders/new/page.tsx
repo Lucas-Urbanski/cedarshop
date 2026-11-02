@@ -1,10 +1,17 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { addDoc, collection } from "firebase/firestore";
+
+import useFirestoreCollection from "@/hooks/useFirestoreCollection";
+import type { ProductRecord } from "@/types/business";
+import { auth, db } from "@/utils/firebase";
 
 export default function NewOrderPage() {
+  const { items: products, loading: productsLoading, error: productsError } =
+    useFirestoreCollection<ProductRecord>("products");
   const [form, setForm] = useState({
     productType: "",
     dimensions: "",
@@ -16,6 +23,14 @@ export default function NewOrderPage() {
   });
 
   const [message, setMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const sku = new URLSearchParams(window.location.search).get("product");
+    if (sku && products.some((product) => product.id === sku)) {
+      setForm((current) => ({ ...current, productType: sku }));
+    }
+  }, [products]);
 
   function handleChange(
     event: React.ChangeEvent<
@@ -32,22 +47,70 @@ export default function NewOrderPage() {
     setMessage("");
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    setMessage(
-      "Your order request has been submitted for this demo. It has not been saved to the database."
+    const user = auth.currentUser;
+    const quantity = Number(form.quantity);
+    const selectedProduct = products.find(
+      (product) => product.id === form.productType,
     );
+    if (
+      !user ||
+      !Number.isSafeInteger(quantity) ||
+      quantity < 1 ||
+      quantity > 1000000
+    ) {
+      setMessage("Sign in again and enter a valid whole-number quantity.");
+      return;
+    }
 
-    setForm({
-      productType: "",
-      dimensions: "",
-      quantity: "1",
-      unit: "pieces",
-      deliveryDate: "",
-      deliveryAddress: "",
-      notes: "",
-    });
+    setIsSubmitting(true);
+    setMessage("");
+    try {
+      const today = new Date();
+      const date = new Date(
+        today.getTime() - today.getTimezoneOffset() * 60_000,
+      )
+        .toISOString()
+        .slice(0, 10);
+      await addDoc(collection(db, "orders"), {
+        customerUid: user.uid,
+        date,
+        productType: selectedProduct?.name ?? form.productType,
+        dimensions: form.dimensions.trim(),
+        items: `${selectedProduct?.name ?? form.productType} — ${form.dimensions.trim()}`,
+        quantity,
+        unit: form.unit,
+        deliveryDate: form.deliveryDate,
+        deliveryAddress: form.deliveryAddress.trim(),
+        notes: form.notes.trim(),
+        total: 0,
+        status: "Pending",
+        createdAt: new Date().toISOString(),
+      });
+
+      setMessage("Your order request has been submitted.");
+
+      setForm({
+        productType: "",
+        dimensions: "",
+        quantity: "1",
+        unit: "pieces",
+        deliveryDate: "",
+        deliveryAddress: "",
+        notes: "",
+      });
+    } catch (error) {
+      console.error("Could not submit order request.", error);
+      setMessage(
+        `We couldn't submit your order request: ${
+          error instanceof Error ? error.message : "Please try again."
+        }`,
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   const inputClass =
@@ -75,8 +138,20 @@ export default function NewOrderPage() {
 
         {message && (
           <div
-            role="status"
-            className="mb-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
+            role={
+              message.includes("could not") ||
+              message.startsWith("Sign in") ||
+              message.startsWith("We couldn't")
+                ? "alert"
+                : "status"
+            }
+            className={`mb-5 rounded-lg border px-4 py-3 text-sm ${
+              message.includes("could not") ||
+              message.startsWith("Sign in") ||
+              message.startsWith("We couldn't")
+                ? "border-red-200 bg-red-50 text-red-800"
+                : "border-green-200 bg-green-50 text-green-800"
+            }`}
           >
             {message}
           </div>
@@ -112,12 +187,23 @@ export default function NewOrderPage() {
                 className={inputClass}
               >
                 <option value="">Select lumber type</option>
-                <option value="Pine">Pine</option>
-                <option value="Cedar">Cedar</option>
-                <option value="Spruce">Spruce</option>
-                <option value="Plywood">Plywood</option>
+                {products.map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.name}
+                  </option>
+                ))}
                 <option value="Other">Other / Special Request</option>
               </select>
+              {productsLoading && (
+                <p role="status" className="mt-1 text-xs text-gray-500">
+                  Loading products…
+                </p>
+              )}
+              {productsError && (
+                <p role="alert" className="mt-1 text-xs text-red-700">
+                  {productsError}
+                </p>
+              )}
             </div>
 
             <div>
@@ -198,7 +284,11 @@ export default function NewOrderPage() {
                 id="deliveryDate"
                 name="deliveryDate"
                 type="date"
-                min={new Date().toLocaleDateString("en-CA")}
+                min={new Date(
+                  Date.now() - new Date().getTimezoneOffset() * 60_000,
+                )
+                  .toISOString()
+                  .slice(0, 10)}
                 value={form.deliveryDate}
                 onChange={handleChange}
                 required
@@ -258,9 +348,10 @@ export default function NewOrderPage() {
 
             <button
               type="submit"
-              className="rounded-lg bg-green-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-green-800"
+              disabled={isSubmitting || productsLoading}
+              className="rounded-lg bg-green-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-green-800 disabled:opacity-50"
             >
-              Submit Order Request
+              {isSubmitting ? "Submitting…" : "Submit Order Request"}
             </button>
           </div>
         </form>

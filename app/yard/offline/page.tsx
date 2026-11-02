@@ -29,12 +29,8 @@ export default function OfflinePage() {
       </h1>
 
       <p style={{ margin: "1em 0", color: "#536358", lineHeight: 1.7 }}>
-        Reconnect to open the yard workspace. Demo changes already saved on
-        this device are still stored in this browser.
-      </p>
-
-      <p style={{ margin: "1em 0", color: "#536358", lineHeight: 1.7 }}>
-        Offline editing and automatic sync are not available in this prototype.
+        Reconnect to open the yard workspace. Changes are saved to the shared
+        workspace when you have an internet connection.
       </p>
 
       <form action="/yard/" method="get" style={{ marginTop: 8 }}>

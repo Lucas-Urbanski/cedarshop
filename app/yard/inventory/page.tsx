@@ -26,6 +26,7 @@ export default function InventoryPage() {
   const [lowOnly, setLowOnly] = useState(false);
   const [editing, setEditing] = useState<YardStock | null>(null);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const items = data.inventory.filter((item) => {
     const matchesSearch =
@@ -41,7 +42,7 @@ export default function InventoryPage() {
     return matchesSearch && matchesLocation && matchesStock;
   });
 
-  function save(event: FormEvent<HTMLFormElement>) {
+  async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!editing) return;
@@ -62,7 +63,8 @@ export default function InventoryPage() {
       return;
     }
 
-    const saved = update(
+    setSaving(true);
+    const saved = await update(
       (current) => ({
         ...current,
         inventory: current.inventory.map((item) =>
@@ -77,8 +79,9 @@ export default function InventoryPage() {
     if (saved) {
       setEditing(null);
     } else {
-      setError("Save failed. Check available device storage and try again.");
+      setError("Save failed. Check your connection and try again.");
     }
+    setSaving(false);
   }
 
   return (
@@ -287,7 +290,7 @@ export default function InventoryPage() {
 
             <p className="yard-helper">
               Use a loss report for damage awaiting review. This form changes
-              the demo stock count immediately.
+              the stock count immediately.
             </p>
 
             {error && (
@@ -303,8 +306,8 @@ export default function InventoryPage() {
                 Cancel
               </button>
 
-              <button className="yard-button" type="submit">
-                Save inventory
+              <button className="yard-button" type="submit" disabled={saving}>
+                {saving ? "Saving…" : "Save inventory"}
               </button>
             </div>
           </form>

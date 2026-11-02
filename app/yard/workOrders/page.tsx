@@ -27,12 +27,13 @@ export default function WorkOrdersPage() {
   const [filter, setFilter] = useState("All orders");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const orders = data.orders.filter(
     (order) => filter === "All orders" || order.status === filter,
   );
 
-  function save(event: FormEvent<HTMLFormElement>) {
+  async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const form = new FormData(event.currentTarget);
@@ -69,7 +70,8 @@ export default function WorkOrdersPage() {
       notes: String(form.get("notes")).trim(),
     };
 
-    const saved = update(
+    setSaving(true);
+    const saved = await update(
       (current) => ({
         ...current,
         orders: [order, ...current.orders],
@@ -80,15 +82,16 @@ export default function WorkOrdersPage() {
     if (saved) {
       setCreating(false);
     } else {
-      setError("Save failed. Check available device storage and try again.");
+      setError("Save failed. Check your connection and try again.");
     }
+    setSaving(false);
   }
 
-  function advance(order: YardWorkOrder) {
+  async function advance(order: YardWorkOrder) {
     const status =
       order.status === "Queued" ? "In progress" : "Completed";
 
-    update(
+    await update(
       (current) => ({
         ...current,
         orders: current.orders.map((item) =>
@@ -215,8 +218,9 @@ export default function WorkOrdersPage() {
       )}
 
       <p className="yard-helper">
-        Drop-cut is the recorded offcut length per piece. This prototype
-        tracks work status; it does not reserve or deduct inventory.
+        Drop-cut is the recorded offcut length per piece. Work status is
+        synchronized with Firestore; work orders do not reserve or deduct
+        inventory.
       </p>
 
       {creating && (
@@ -320,8 +324,8 @@ export default function WorkOrdersPage() {
                 Cancel
               </button>
 
-              <button type="submit" className="yard-button">
-                Create work order
+              <button type="submit" className="yard-button" disabled={saving}>
+                {saving ? "Saving…" : "Create work order"}
               </button>
             </div>
           </form>

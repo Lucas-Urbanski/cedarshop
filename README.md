@@ -22,19 +22,43 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ## Firebase Firestore rules
 
-The app stores user profiles in the `users/{uid}` collection. Before using signup
-or Google sign-in, deploy the included rules to the `cedarshoplms` Firebase
-project:
+The app stores user profiles, operational data, and compressed loss-report
+photos in Firestore. Before using authentication and workflows, deploy the
+Firestore rules to the `cedarshoplms` Firebase project:
 
 ```bash
 firebase deploy --only firestore:rules --project cedarshoplms
 ```
 
-The rules let signed-in users read and update their own profile and create only
-their own customer profile. Profile updates cannot change the account email,
-role, user ID, or creation date. Assign staff or administrator roles using a
-trusted Firebase Admin SDK environment, never from client code. Deploy the rules
-after changes so profile editing is permitted in Firestore.
+Administrators have full read/write access to Firestore. Other
+accounts are restricted by the collection-specific rules: customer records
+are owner-scoped, inventory costs are administrator-only, and drivers can
+update only delivery status. Loss-report photos are resized and compressed in
+the browser before being saved directly in their Firestore report document.
+Staff roles must be assigned through a trusted Firebase Admin SDK environment,
+never from client code.
+
+This app is statically exported, so page guards provide navigation and UI
+protection rather than server-side authorization. Firestore rules are the
+security boundary for persisted data and must be deployed before using the
+workflows.
+
+Existing workspaces use these collections:
+
+- `products`: public catalog names and prices.
+- `inventory`: quantities and yard locations, accessible to yard, sales, and
+  administrator roles.
+- `productCosts`: administrator-only unit costs.
+- `orders`, `deliveries`, and `salesQuotes`: customer-owned orders/deliveries
+  and staff-authored quotes.
+- `yardWorkOrders`, `yardLossReports`, and `yardActivity`: yard operations.
+- `system/demoFixturesV1`: one-time demo seed marker.
+
+An administrator can explicitly load clearly marked demonstration inventory,
+yard records, and route records from the Admin page. The seeder only runs when
+all corresponding collections are empty and never creates orders for another
+customer. To seed again, remove the demo documents and the
+`system/demoFixturesV1` marker from Firestore.
 
 ## Learn More
 

@@ -5,68 +5,22 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import Navbar from "@/components/navBar";
 import type { AdminLossReport, AdminProduct } from "@/types/types";
+import {
+  doc,
+  runTransaction,
+  serverTimestamp,
+  updateDoc,
+} from "firebase/firestore";
 
-const initialProducts: AdminProduct[] = [
-  {
-    id: 1,
-    sku: "CED-001",
-    name: "2x4 Western Red Cedar - 8ft",
-    price: 12.4,
-    cost: 7.5,
-    quantity: 762,
-  },
-  {
-    id: 2,
-    sku: "CED-002",
-    name: "2x6 Western Red Cedar - 10ft",
-    price: 19.99,
-    cost: 12.25,
-    quantity: 340,
-  },
-  {
-    id: 3,
-    sku: "CED-003",
-    name: "4x4 Cedar Post - 8ft",
-    price: 32.5,
-    cost: 21,
-    quantity: 125,
-  },
-  {
-    id: 4,
-    sku: "CED-004",
-    name: "1x6 Cedar Fence Board - 6ft",
-    price: 8.75,
-    cost: 4.8,
-    quantity: 18,
-  },
-];
-
-const initialReports: AdminLossReport[] = [
-  {
-    id: 101,
-    sku: "CED-001",
-    product: "2x4 Western Red Cedar - 8ft",
-    quantity: 8,
-    reason: "Damaged during handling",
-    status: "Pending",
-  },
-  {
-    id: 102,
-    sku: "CED-003",
-    product: "4x4 Cedar Post - 8ft",
-    quantity: 3,
-    reason: "Cracked lumber",
-    status: "Pending",
-  },
-  {
-    id: 103,
-    sku: "CED-002",
-    product: "2x6 Western Red Cedar - 10ft",
-    quantity: 5,
-    reason: "Moisture damage",
-    status: "Pending",
-  },
-];
+import useFirestoreCollection from "@/hooks/useFirestoreCollection";
+import type {
+  InventoryRecord,
+  ProductCostRecord,
+  ProductRecord,
+  YardLossRecord,
+} from "@/types/business";
+import { auth, db } from "@/utils/firebase";
+import { seedDemoData } from "@/utils/demoSeed";
 
 const money = (amount: number) =>
   amount.toLocaleString("en-CA", {
@@ -84,11 +38,59 @@ const primaryButton =
   "rounded-lg bg-[var(--accent-strong)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110";
 
 export default function AdminDashboard() {
-  const [products, setProducts] = useState(initialProducts);
-  const [reports, setReports] = useState(initialReports);
+  const { items: productRecords, loading: productsLoading, error: productsError } =
+    useFirestoreCollection<ProductRecord>("products");
+  const { items: costRecords, error: costsError } =
+    useFirestoreCollection<ProductCostRecord>("productCosts");
+  const {
+    items: inventoryRecords,
+    loading: inventoryLoading,
+    error: inventoryError,
+  } = useFirestoreCollection<InventoryRecord>("inventory");
+  const { items: lossRecords, error: lossesError } =
+    useFirestoreCollection<YardLossRecord>("yardLossReports");
   const [search, setSearch] = useState("");
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editQuantity, setEditQuantity] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [actionMessage, setActionMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const costsBySku = useMemo(
+    () => new Map(costRecords.map((record) => [record.id, record.cost])),
+    [costRecords],
+  );
+  const inventoryBySku = useMemo(
+    () => new Map(inventoryRecords.map((record) => [record.id, record])),
+    [inventoryRecords],
+  );
+  const products: AdminProduct[] = useMemo(
+    () =>
+      productRecords.map((product) => ({
+        id: product.id,
+        sku: product.id,
+        name: product.name,
+        price: product.price,
+        cost: costsBySku.get(product.id) ?? null,
+        quantity: inventoryBySku.get(product.id)?.quantity ?? 0,
+      })),
+    [costsBySku, inventoryBySku, productRecords],
+  );
+  const reports: AdminLossReport[] = useMemo(
+    () =>
+      lossRecords.map((report) => ({
+        id: report.id,
+        sku: report.stockId,
+        product:
+          productRecords.find((product) => product.id === report.stockId)?.name ??
+          report.stockId,
+        quantity: report.quantity,
+        reason: report.notes,
+        status:
+          report.status === "Pending review" ? "Pending" : report.status,
+      })),
+    [lossRecords, productRecords],
+  );
 
   const totalUnits = products.reduce(
     (sum, product) => sum + product.quantity,
@@ -96,12 +98,14 @@ export default function AdminDashboard() {
   );
 
   const inventoryValue = products.reduce(
-    (sum, product) => sum + product.quantity * product.cost,
+    (sum, product) => sum + product.quantity * (product.cost ?? 0),
     0
   );
 
   const lowStockCount = products.filter(
-    (product) => product.quantity < 50
+    (product) =>
+      product.quantity <
+      (inventoryBySku.get(product.id)?.minimum ?? Number.POSITIVE_INFINITY),
   ).length;
 
   const pendingReports = reports.filter(
@@ -118,7 +122,7 @@ export default function AdminDashboard() {
     );
   }, [products, search]);
 
-  function saveQuantity(id: number) {
+  async function saveQuantity(id: string) {
     const nextQuantity = Number(editQuantity);
 
     if (
@@ -126,67 +130,129 @@ export default function AdminDashboard() {
       !Number.isSafeInteger(nextQuantity) ||
       nextQuantity < 0
     ) {
-      alert("Enter a valid whole-number quantity.");
+      setActionError("Enter a valid whole-number quantity.");
       return;
     }
 
-    setProducts((current) =>
-      current.map((product) =>
-        product.id === id
-          ? { ...product, quantity: nextQuantity }
-          : product
-      )
-    );
-
-    setEditingId(null);
-    setEditQuantity("");
+    setSaving(true);
+    setActionError("");
+    try {
+      await updateDoc(doc(db, "inventory", id), { quantity: nextQuantity });
+      setEditingId(null);
+      setEditQuantity("");
+      setActionMessage(`Stock for ${id} was updated.`);
+    } catch (error) {
+      console.error("Could not update inventory.", error);
+      setActionError("Inventory could not be updated. Check your connection and try again.");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function updateReport(
-    id: number,
+  async function updateReport(
+    id: string,
     status: "Approved" | "Rejected"
   ) {
     const report = reports.find((item) => item.id === id);
+    const user = auth.currentUser;
 
     if (!report || report.status !== "Pending") return;
-
-    if (status === "Approved") {
-      const product = products.find(
-        (item) => item.sku === report.sku
-      );
-
-      if (!product || product.quantity < report.quantity) {
-        alert("Not enough inventory to approve this loss report.");
-        return;
-      }
-
-      setProducts((current) =>
-        current.map((item) =>
-          item.sku === report.sku
-            ? {
-                ...item,
-                quantity: item.quantity - report.quantity,
-              }
-            : item
-        )
-      );
+    if (!user) {
+      setActionError("Sign in again before reviewing a loss report.");
+      return;
     }
 
-    setReports((current) =>
-      current.map((item) =>
-        item.id === id ? { ...item, status } : item
-      )
-    );
+    setSaving(true);
+    setActionError("");
+    setActionMessage("");
+    try {
+      await runTransaction(db, async (transaction) => {
+        const reportRef = doc(db, "yardLossReports", id);
+        const reportSnapshot = await transaction.get(reportRef);
+        if (!reportSnapshot.exists()) {
+          throw new Error("This loss report no longer exists.");
+        }
+
+        const currentReport = reportSnapshot.data() as YardLossRecord;
+        if (currentReport.status !== "Pending review") {
+          throw new Error("This loss report has already been reviewed.");
+        }
+
+        if (status === "Approved") {
+          const inventoryRef = doc(db, "inventory", currentReport.stockId);
+          const inventorySnapshot = await transaction.get(inventoryRef);
+          if (!inventorySnapshot.exists()) {
+            throw new Error("The reported inventory item could not be found.");
+          }
+
+          const quantity = inventorySnapshot.data().quantity;
+          if (
+            typeof quantity !== "number" ||
+            quantity < currentReport.quantity
+          ) {
+            throw new Error("There is not enough inventory to approve this report.");
+          }
+          transaction.update(inventoryRef, {
+            quantity: quantity - currentReport.quantity,
+          });
+        }
+
+        transaction.update(reportRef, {
+          status,
+          reviewedBy: user.uid,
+          reviewedAt: serverTimestamp(),
+        });
+      });
+      setActionMessage(`Loss report ${id} was ${status.toLowerCase()}.`);
+    } catch (error) {
+      console.error("Could not review loss report.", error);
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : "The loss report could not be updated.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleSeedDemoData() {
+    const user = auth.currentUser;
+    if (!user) {
+      setActionError("Sign in again before loading demonstration records.");
+      return;
+    }
+    if (productRecords.length || inventoryRecords.length) {
+      setActionError("The workspace already contains inventory records.");
+      return;
+    }
+
+    setSeeding(true);
+    setActionError("");
+    setActionMessage("");
+    try {
+      await seedDemoData(user.uid);
+      setActionMessage("Demonstration inventory, yard records, and route records were loaded.");
+    } catch (error) {
+      console.error("Could not load demonstration records.", error);
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : "Demonstration records could not be loaded.",
+      );
+    } finally {
+      setSeeding(false);
+    }
   }
 
   return (
     <div className="appShell">
       <Navbar user={null}>
-        <nav className="flex flex-wrap items-center gap-4 text-sm text-white">
-          <Link href="/" className="hover:underline">
+        <nav className="workspace-nav" aria-label="Administrator navigation">
+          <Link href="/" className="workspace-nav-link">
             Home
           </Link>
-          <span className="font-semibold text-[var(--highlight)]">
+          <span className="workspace-nav-current" aria-current="page">
             Admin Dashboard
           </span>
         </nav>
@@ -203,6 +269,33 @@ export default function AdminDashboard() {
             and monitor operations.
           </p>
         </header>
+
+        {actionError && <p role="alert" className="text-sm text-red-500">{actionError}</p>}
+        {actionMessage && <p role="status" className="text-sm text-green-600">{actionMessage}</p>}
+        {(productsError || costsError || lossesError || inventoryError) && (
+          <p role="alert" className="text-sm text-red-500">
+            {productsError || costsError || lossesError || inventoryError}
+          </p>
+        )}
+        {!productsLoading &&
+          !inventoryLoading &&
+          productRecords.length === 0 &&
+          inventoryRecords.length === 0 && (
+          <section className={cardClass}>
+            <h2 className="text-lg font-semibold">No inventory records</h2>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">
+              Add real inventory in Firestore, or explicitly load the clearly marked demonstration records once.
+            </p>
+            <button
+              type="button"
+              onClick={handleSeedDemoData}
+              disabled={seeding}
+              className={`${primaryButton} mt-4 disabled:opacity-50`}
+            >
+              {seeding ? "Loading demonstration records…" : "Load demonstration records"}
+            </button>
+          </section>
+        )}
 
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className={cardClass}>
@@ -302,7 +395,7 @@ export default function AdminDashboard() {
                       {money(product.price)}
                     </td>
                     <td className="p-3">
-                      {money(product.cost)}
+                      {product.cost === null ? "—" : money(product.cost)}
                     </td>
                     <td className="p-3">
                       {editingId === product.id ? (
@@ -352,7 +445,7 @@ export default function AdminDashboard() {
                             Cancel
                           </button>
                         </div>
-                      ) : (
+                      ) : inventoryBySku.has(product.id) ? (
                         <button
                           type="button"
                           onClick={() => {
@@ -365,6 +458,10 @@ export default function AdminDashboard() {
                         >
                           Edit Stock
                         </button>
+                      ) : (
+                        <span className="text-[var(--text-muted)]">
+                          No stock record
+                        </span>
                       )}
                     </td>
                   </tr>
@@ -385,11 +482,16 @@ export default function AdminDashboard() {
             Loss Report Approval Queue
           </h2>
           <p className="mb-5 mt-1 text-sm text-[var(--text-secondary)]">
-            Review damaged or missing lumber.
-            Approving a report reduces the demo inventory quantity.
+            Review damaged or missing lumber. Approving a report deducts the
+            reported quantity from inventory.
           </p>
 
           <div className="space-y-3">
+            {productsLoading && (
+              <p role="status" className="text-sm text-[var(--text-muted)]">
+                Loading inventory…
+              </p>
+            )}
             {reports.map((report) => (
               <div
                 key={report.id}
@@ -449,10 +551,8 @@ export default function AdminDashboard() {
         </section>
 
         <p className="pb-4 text-xs text-[var(--text-muted)]">
-          Prototype only. Inventory costs, quantities, and loss
-          reports are sample data. Changes reset when the page
-          reloads. Firebase integration and admin authorization
-          are not yet implemented.
+          Inventory, unit costs, and loss reports are synchronized with
+          Firestore. Demonstration records are explicitly marked when loaded.
         </p>
       </main>
     </div>

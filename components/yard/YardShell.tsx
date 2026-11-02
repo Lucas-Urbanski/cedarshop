@@ -23,6 +23,7 @@ import logo from "@/images/CedarShopLogo.png";
 import { useTheme } from "@/components/themeProvider";
 import type { ChildrenProps } from "@/types/types";
 import { useYard } from "./YardProvider";
+import useAuthDisplayName from "@/hooks/useAuthDisplayName";
 
 const links = [
   { href: "/yard", label: "Overview", icon: LayoutDashboard },
@@ -49,6 +50,12 @@ export default function YardShell({ children }: ChildrenProps) {
   const { theme, toggleTheme } = useTheme();
   const { notice, ready } = useYard();
   const [online, setOnline] = useState(true);
+  const staffName = useAuthDisplayName("Floor staff");
+  const initials = staffName
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
 
   useEffect(() => {
     const updateConnection = () => setOnline(navigator.onLine);
@@ -64,7 +71,9 @@ export default function YardShell({ children }: ChildrenProps) {
     ) {
       navigator.serviceWorker
         .register("/yardServiceWorker.js", { scope: "/yard/" })
-        .catch(() => {});
+        .catch((error: unknown) => {
+          console.error("Could not register the yard service worker.", error);
+        });
     }
 
     return () => {
@@ -72,10 +81,6 @@ export default function YardShell({ children }: ChildrenProps) {
       window.removeEventListener("offline", updateConnection);
     };
   }, []);
-
-  if (path === "/yard/offline") {
-    return children;
-  }
 
   return (
     <div className="yard-app">
@@ -149,8 +154,8 @@ export default function YardShell({ children }: ChildrenProps) {
               {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
             </button>
 
-            <span className="yard-avatar" aria-label="Floor staff demo">
-              YS
+            <span className="yard-avatar" aria-label={staffName}>
+              {initials}
             </span>
           </div>
         </header>
@@ -158,8 +163,8 @@ export default function YardShell({ children }: ChildrenProps) {
         <main id="yard-main" className="yard-main">
           <div className="yard-demo">
             <span className="yard-dot" />
-            Floor staff prototype
-            <span>• Sample data · saved on this device</span>
+            Floor staff workspace
+            <span>• Firestore · Live updates</span>
           </div>
 
           {notice && (
@@ -173,7 +178,7 @@ export default function YardShell({ children }: ChildrenProps) {
 
         <footer className="yard-footer">
           THE CEDAR SHOP
-          <span>Yard workspace · Phase 2 prototype</span>
+          <span>Yard workspace · Live operations</span>
         </footer>
       </div>
     </div>

@@ -1,6 +1,8 @@
 .driver-app {
-  --driver-green: #093d30;
-  --driver-gold: #d3b778;
+  --driver-green: #102b25;
+  --driver-green-soft: #1b4035;
+  --driver-gold: #d6b66f;
+  --driver-sidebar-width: 272px;
   display: flex;
   min-height: 100vh;
   background: var(--page-bg);
@@ -35,57 +37,210 @@
   z-index: 10;
   inset: 0 auto 0 0;
   display: flex;
-  width: 224px;
+  width: var(--driver-sidebar-width);
   flex-direction: column;
-  padding: 30px 18px;
-  background: var(--driver-green);
+  overflow: hidden;
+  padding: 25px 18px 17px;
+  border-right: 1px solid #ffffff0d;
+  background:
+    radial-gradient(ellipse at 10% 55%, #2f67501a, transparent 47%),
+    linear-gradient(165deg, #17392f 0%, #102b25 46%, #0c211d 100%);
   color: #edf6ef;
 }
 
-.driver-logo {
-  display: flex;
-  justify-content: center;
-  margin: 0 0 32px;
+.driver-sidebar::after {
+  position: absolute;
+  right: -100px;
+  bottom: 105px;
+  width: 240px;
+  height: 240px;
+  border: 1px solid #ffffff0a;
+  border-radius: 50%;
+  box-shadow: 0 0 0 30px #ffffff05, 0 0 0 60px #ffffff03;
+  content: "";
+  pointer-events: none;
 }
 
-.driver-logo img {
-  width: 116px;
-  height: 93px;
+.driver-brand {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: 62px;
+  align-items: center;
+  gap: 12px;
+  padding: 3px 4px 21px;
+  border-bottom: 1px solid #ffffff18;
+  color: #f7f8f2;
+  text-decoration: none;
+}
+
+.driver-brand-mark {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #ffffff80;
+  border-radius: 13px;
+  background: #f7f4e9;
+  box-shadow: 0 5px 16px #071a1533;
+}
+
+.driver-brand-mark img {
+  width: 39px;
+  height: 31px;
   object-fit: contain;
 }
 
-.driver-sidebar-label {
-  margin: 0 14px 15px;
-  color: #a8c9b8;
+.driver-brand-copy,
+.driver-sidebar-profile-copy {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.driver-brand-copy strong {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.driver-brand-copy small {
+  color: #b6c8bc;
   font-size: 9px;
-  letter-spacing: 0.16em;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+}
+
+.driver-brand-arrow {
+  margin-left: auto;
+  color: #a8bdb0;
+  transition: color 160ms ease, transform 160ms ease;
+}
+
+.driver-brand:hover .driver-brand-arrow {
+  transform: translate(2px, -2px);
+  color: var(--driver-gold);
+}
+
+.driver-nav-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 27px 9px 11px;
+}
+
+.driver-sidebar-label {
+  color: #9fb6a8;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.17em;
+}
+
+.driver-nav-heading-line {
+  height: 1px;
+  flex: 1;
+  background: #ffffff1a;
 }
 
 .driver-nav {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .driver-nav a {
+  position: relative;
   display: flex;
-  min-height: 46px;
+  min-height: 63px;
   align-items: center;
-  gap: 12px;
-  padding: 13px 14px;
-  border-radius: 7px;
-  color: #bbd2c5;
-  font-size: 13px;
+  gap: 11px;
+  padding: 10px 11px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: #c1d0c6;
+  text-decoration: none;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
 }
 
 .driver-nav a:hover {
-  background: #ffffff0a;
-  color: #fff;
+  transform: translateX(2px);
+  border-color: #ffffff0d;
+  background: #ffffff0b;
+  color: #ffffff;
 }
 
 .driver-nav a.active {
-  background: #ffffff12;
+  border-color: #d6b66f40;
+  background: linear-gradient(105deg, #d6b66f1c, #ffffff09 80%);
   color: #fff;
-  box-shadow: inset 3px 0 var(--driver-gold);
+  box-shadow: inset 3px 0 var(--driver-gold), 0 5px 18px #071a1524;
+}
+
+.driver-nav a:focus-visible,
+.driver-brand:focus-visible,
+.driver-store-link:focus-visible {
+  outline: 2px solid var(--driver-gold);
+  outline-offset: 3px;
+}
+
+.driver-nav-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  place-items: center;
+  border: 1px solid #ffffff14;
+  border-radius: 10px;
+  background: #ffffff08;
+  color: #b8cdbf;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.driver-nav a.active .driver-nav-icon {
+  border-color: #d6b66f55;
+  background: #d6b66f1c;
+  color: var(--driver-gold);
+}
+
+.driver-nav-copy {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.driver-nav-copy strong {
+  color: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.driver-nav-copy small {
+  color: #9eb4a7;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.driver-nav a.active .driver-nav-copy small {
+  color: #d4dfd7;
+}
+
+.driver-nav-chevron {
+  margin-left: auto;
+  color: #799688;
+  opacity: 0;
+  transform: translateX(-3px);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.driver-nav a:hover .driver-nav-chevron,
+.driver-nav a.active .driver-nav-chevron {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .driver-nav-dot {
@@ -96,33 +251,141 @@
   background: var(--driver-gold);
 }
 
-.driver-sidebar-foot {
-  margin-top: auto;
-  padding: 38px 14px 0;
-  color: #b0cabe;
+.driver-route-card {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  overflow: hidden;
+  margin: 31px 2px 0;
+  padding: 16px 15px 17px;
+  border: 1px solid #ffffff15;
+  border-radius: 15px;
+  background:
+    linear-gradient(145deg, #244c3c 0%, #1a3b31 60%, #15342b 100%);
+  box-shadow: 0 12px 26px #071a1526;
 }
 
-.driver-sidebar-foot strong {
-  display: block;
-  margin-top: 12px;
-  color: #edf6ef;
+.driver-route-card-icon {
+  display: grid;
+  width: 35px;
+  height: 35px;
+  place-items: center;
+  border: 1px solid #ffffff20;
+  border-radius: 10px;
+  background: #ffffff0d;
+  color: var(--driver-gold);
+}
+
+.driver-route-card-label {
+  color: #d7bd7e;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.17em;
+}
+
+.driver-route-card > strong {
+  position: relative;
+  z-index: 1;
+  max-width: 165px;
+  color: #f4f4eb;
   font-size: 13px;
+  line-height: 1.35;
 }
 
-.driver-sidebar-foot p {
-  margin: 8px 0 18px;
+.driver-route-card p {
+  position: relative;
+  z-index: 1;
+  max-width: 175px;
+  color: #b9cdc1;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.driver-route-card-decoration {
+  position: absolute;
+  right: -19px;
+  bottom: -24px;
+  color: #d6b66f12;
+  transform: rotate(-17deg);
+}
+
+.driver-sidebar-bottom {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 9px;
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+.driver-sidebar-profile {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 9px;
+  border: 1px solid #ffffff14;
+  border-radius: 12px;
+  background: #ffffff08;
+}
+
+.driver-sidebar-profile .driver-avatar {
+  width: 35px;
+  height: 35px;
+  flex: none;
+  border-color: #d6b66f54;
+  background: #d6b66f1b;
+  color: #f0d99e;
+}
+
+.driver-sidebar-profile-copy {
+  flex: 1;
+}
+
+.driver-sidebar-profile-copy strong {
+  overflow: hidden;
+  color: #f2f5ef;
   font-size: 11px;
-  line-height: 1.6;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.driver-sidebar-foot a {
-  font-size: 12px;
+.driver-sidebar-profile-copy small {
+  color: #9eb4a7;
+  font-size: 9px;
+}
+
+.driver-profile-status {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: #78c89a;
+  box-shadow: 0 0 0 4px #78c89a1c;
+}
+
+.driver-store-link {
+  display: flex;
+  min-height: 39px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  border-radius: 9px;
+  color: #baccc0;
+  font-size: 10px;
+  text-decoration: none;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.driver-store-link:hover {
+  background: #ffffff0a;
+  color: #fff;
 }
 
 .driver-body {
-  width: calc(100% - 224px);
+  width: calc(100% - var(--driver-sidebar-width));
   min-width: 0;
-  margin-left: 224px;
+  margin-left: var(--driver-sidebar-width);
 }
 
 .driver-topbar {
@@ -736,25 +999,82 @@
   .driver-sidebar {
     position: static;
     width: 100%;
-    padding: 10px 16px;
+    overflow: visible;
+    padding: 10px 15px 12px;
   }
 
-  .driver-logo,
-  .driver-sidebar-label,
-  .driver-sidebar-foot {
+  .driver-sidebar::after {
+    display: none;
+  }
+
+  .driver-brand {
+    min-height: 48px;
+    margin-bottom: 9px;
+    padding: 0 2px 9px;
+  }
+
+  .driver-brand-mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .driver-brand-mark img {
+    width: 32px;
+    height: 26px;
+  }
+
+  .driver-brand-copy strong {
+    font-size: 10px;
+  }
+
+  .driver-brand-copy small {
+    font-size: 8px;
+  }
+
+  .driver-nav-heading,
+  .driver-route-card,
+  .driver-sidebar-bottom {
     display: none;
   }
 
   .driver-nav {
     display: flex;
-    gap: 7px;
+    gap: 8px;
     overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .driver-nav::-webkit-scrollbar {
+    display: none;
   }
 
   .driver-nav a {
-    flex: none;
-    min-height: 40px;
-    padding: 9px 12px;
+    flex: 1 0 auto;
+    min-width: 145px;
+    min-height: 44px;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 10px;
+  }
+
+  .driver-nav-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+  }
+
+  .driver-nav-copy {
+    gap: 0;
+  }
+
+  .driver-nav-copy strong {
+    font-size: 10px;
+  }
+
+  .driver-nav-copy small,
+  .driver-nav-chevron {
+    display: none;
   }
 
   .driver-body {

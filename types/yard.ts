@@ -21,6 +21,8 @@ export interface YardWorkOrder {
   priority: "Normal" | "High";
   status: "Queued" | "In progress" | "Completed";
   notes: string;
+  createdBy?: string;
+  updatedAt?: string;
 }
 
 export interface YardLoss {
@@ -31,7 +33,8 @@ export interface YardLoss {
   notes: string;
   photo: string;
   created: string;
-  status: "Pending review";
+  status: "Pending review" | "Approved" | "Rejected";
+  createdBy?: string;
 }
 
 export interface YardData {

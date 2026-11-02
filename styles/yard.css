@@ -72,14 +72,29 @@
   color: #bbd2c5;
   font-size: 13px;
   min-height: 46px;
+  text-decoration: none;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
 }
 
-.yard-sidebar nav a:hover { background: #ffffff0a; color: white; }
+.yard-sidebar nav a:hover {
+  transform: translateX(2px);
+  background: #ffffff0a;
+  color: white;
+}
 
 .yard-sidebar nav a.active {
   background: #ffffff12;
   color: #fff;
   box-shadow: inset 3px 0 #d3b778;
+}
+
+.yard-sidebar nav a:focus-visible {
+  outline: 2px solid #d3b778;
+  outline-offset: 3px;
 }
 
 .yard-nav-dot {
@@ -151,6 +166,16 @@
   background: transparent;
   border: 1px solid var(--border);
   border-radius: 8px;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.yard-icon-button:hover {
+  transform: translateY(-1px);
+  background: var(--surface-raised);
 }
 
 .yard-avatar {

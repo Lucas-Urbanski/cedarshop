@@ -1,34 +1,19 @@
 
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import Navbar from "@/components/navBar";
 import type { SalesProduct, SalesQuoteItem } from "@/types/types";
+import {
+  collection,
+  doc,
+  runTransaction,
+} from "firebase/firestore";
 
-const products: SalesProduct[] = [
-  {
-    id: 1,
-    sku: "CED-001",
-    name: "2x4 Western Red Cedar - 8ft",
-    price: 12.4,
-    quantity: 762,
-  },
-  {
-    id: 2,
-    sku: "CED-002",
-    name: "2x6 Western Red Cedar - 10ft",
-    price: 19.99,
-    quantity: 340,
-  },
-  {
-    id: 3,
-    sku: "CED-003",
-    name: "4x4 Cedar Post - 8ft",
-    price: 32.5,
-    quantity: 125,
-  },
-];
+import useFirestoreCollection from "@/hooks/useFirestoreCollection";
+import type { InventoryRecord, ProductRecord } from "@/types/business";
+import { auth, db } from "@/utils/firebase";
 
 const money = (amount: number) =>
   amount.toLocaleString("en-CA", {
@@ -46,13 +31,37 @@ const primaryButton =
   "rounded-lg bg-[var(--accent-strong)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110";
 
 export default function SalesDashboard() {
+  const { items: productRecords, loading, error: productsError } =
+    useFirestoreCollection<ProductRecord>("products");
+  const {
+    items: inventoryRecords,
+    loading: inventoryLoading,
+    error: inventoryError,
+  } = useFirestoreCollection<InventoryRecord>("inventory");
   const [search, setSearch] = useState("");
   const [quoteItems, setQuoteItems] = useState<SalesQuoteItem[]>([]);
   const [discount, setDiscount] = useState(0);
   const [customerName, setCustomerName] = useState("");
+  const [savingQuote, setSavingQuote] = useState(false);
+  const [quoteMessage, setQuoteMessage] = useState("");
+  const inventoryBySku = useMemo(
+    () => new Map(inventoryRecords.map((record) => [record.id, record])),
+    [inventoryRecords],
+  );
+  const products: SalesProduct[] = useMemo(
+    () =>
+      productRecords.map((product) => ({
+        id: product.id,
+        sku: product.id,
+        name: product.name,
+        price: product.price,
+        quantity: inventoryBySku.get(product.id)?.quantity ?? 0,
+      })),
+    [inventoryBySku, productRecords],
+  );
 
   const filteredProducts = products.filter((product) => {
-    const term = search.toLowerCase();
+    const term = search.trim().toLowerCase();
 
     return (
       product.name.toLowerCase().includes(term) ||
@@ -100,7 +109,7 @@ export default function SalesDashboard() {
     });
   }
 
-  function updateQuantity(productId: number, value: number) {
+  function updateQuantity(productId: string, value: number) {
     if (!Number.isFinite(value)) return;
 
     setQuoteItems((current) =>
@@ -118,20 +127,88 @@ export default function SalesDashboard() {
     );
   }
 
-  function removeFromQuote(productId: number) {
+  function removeFromQuote(productId: string) {
     setQuoteItems((current) =>
       current.filter((item) => item.product.id !== productId)
     );
   }
 
+  async function saveQuote() {
+    const user = auth.currentUser;
+    if (!user || quoteItems.length === 0 || !customerName.trim()) return;
+
+    setSavingQuote(true);
+    setQuoteMessage("");
+    const quoteRef = doc(collection(db, "salesQuotes"));
+    try {
+      await runTransaction(db, async (transaction) => {
+        const latestRecords = await Promise.all(
+          quoteItems.map((item) =>
+            Promise.all([
+              transaction.get(doc(db, "products", item.product.id)),
+              transaction.get(doc(db, "inventory", item.product.id)),
+            ]),
+          ),
+        );
+
+        latestRecords.forEach(([productSnapshot, inventorySnapshot], index) => {
+          const item = quoteItems[index];
+          if (!productSnapshot.exists() || !inventorySnapshot.exists()) {
+            throw new Error(`${item.product.name} is no longer available.`);
+          }
+          const latest = productSnapshot.data();
+          const latestInventory = inventorySnapshot.data();
+          if (
+            latest.price !== item.product.price ||
+            typeof latestInventory.quantity !== "number" ||
+            latestInventory.quantity < item.quantity
+          ) {
+            throw new Error(
+              "Inventory or prices changed. Review the quote and try again.",
+            );
+          }
+        });
+
+        transaction.set(quoteRef, {
+          customerName: customerName.trim(),
+          createdBy: user.uid,
+          createdAt: new Date().toISOString(),
+          items: quoteItems.map(({ product, quantity }) => ({
+            sku: product.sku,
+            name: product.name,
+            unitPrice: product.price,
+            quantity,
+          })),
+          subtotal,
+          discountPercent: safeDiscount,
+          total,
+        });
+      });
+
+      setQuoteItems([]);
+      setDiscount(0);
+      setCustomerName("");
+      setQuoteMessage("Quote saved.");
+    } catch (error) {
+      console.error("Could not save sales quote.", error);
+      setQuoteMessage(
+        error instanceof Error
+          ? error.message
+          : "Quote could not be saved. Check your connection and try again.",
+      );
+    } finally {
+      setSavingQuote(false);
+    }
+  }
+
   return (
     <div className="appShell">
       <Navbar user={null}>
-        <nav className="flex flex-wrap items-center gap-4 text-sm text-white">
-          <Link href="/" className="hover:underline">
+        <nav className="workspace-nav" aria-label="Sales navigation">
+          <Link href="/" className="workspace-nav-link">
             Home
           </Link>
-          <span className="font-semibold text-[var(--highlight)]">
+          <span className="workspace-nav-current" aria-current="page">
             Sales Dashboard
           </span>
         </nav>
@@ -147,6 +224,24 @@ export default function SalesDashboard() {
             Search lumber inventory and prepare customer quotes.
           </p>
         </div>
+
+        {(productsError || inventoryError) && (
+          <p role="alert" className="text-sm text-red-500">
+            {productsError || inventoryError}
+          </p>
+        )}
+        {quoteMessage && (
+          <p
+            role={quoteMessage === "Quote saved." ? "status" : "alert"}
+            className={`text-sm ${
+              quoteMessage === "Quote saved."
+                ? "text-green-600"
+                : "text-red-500"
+            }`}
+          >
+            {quoteMessage}
+          </p>
+        )}
 
         <section className="grid gap-4 sm:grid-cols-3">
           <div className={cardClass}>
@@ -248,9 +343,14 @@ export default function SalesDashboard() {
               </tbody>
             </table>
 
+            {(loading || inventoryLoading) && (
+              <p role="status" className="py-4 text-sm text-[var(--text-muted)]">
+                Loading inventory…
+              </p>
+            )}
             {filteredProducts.length === 0 && (
               <p className="py-8 text-center text-sm text-[var(--text-muted)]">
-                No matching products found.
+                {loading || inventoryLoading ? " " : "No matching products found."}
               </p>
             )}
           </div>
@@ -290,6 +390,7 @@ export default function SalesDashboard() {
             <input
               id="customer-name"
               value={customerName}
+              required
               onChange={(event) =>
                 setCustomerName(event.target.value)
               }
@@ -420,13 +521,26 @@ export default function SalesDashboard() {
               </div>
             </div>
           </div>
+
+          <div className="mt-5 flex justify-end">
+            <button
+              type="button"
+              onClick={saveQuote}
+              disabled={
+                savingQuote ||
+                !quoteItems.length ||
+                !customerName.trim()
+              }
+              className={`${primaryButton} disabled:cursor-not-allowed disabled:opacity-50`}
+            >
+              {savingQuote ? "Saving quote…" : "Save Quote"}
+            </button>
+          </div>
         </section>
 
         <p className="pb-4 text-xs text-[var(--text-muted)]">
-          Prototype only. Inventory and prices are sample data.
-          Quotes are not saved, and totals exclude taxes and delivery.
-          Employee authentication and database integration are not yet
-          connected.
+          Quotes and current inventory prices are stored in Firestore.
+          Totals exclude taxes and delivery.
         </p>
       </main>
     </div>

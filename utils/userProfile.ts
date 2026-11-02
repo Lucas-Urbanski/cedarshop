@@ -13,3 +13,18 @@ export function getUserRole(value: unknown): UserRole | null {
 
   return userRoles[value.toLowerCase().replace(/\s+/g, "")] ?? null;
 }
+
+export function getRoleHome(role: UserRole): string {
+  switch (role) {
+    case "Customer":
+      return "/portal";
+    case "Driver":
+      return "/driver/dashboard";
+    case "FloorStaff":
+      return "/yard";
+    case "SalesStaff":
+      return "/sales";
+    case "Administrator":
+      return "/admin";
+  }
+}

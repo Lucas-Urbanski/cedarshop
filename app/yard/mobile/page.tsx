@@ -28,6 +28,7 @@ export default function YardMobilePage() {
   const [install, setInstall] = useState<YardInstallPrompt | null>(null);
   const [installed, setInstalled] = useState(false);
   const [help, setHelp] = useState(false);
+  const [installError, setInstallError] = useState("");
 
   useEffect(() => {
     setInstalled(window.matchMedia("(display-mode: standalone)").matches);
@@ -52,6 +53,7 @@ export default function YardMobilePage() {
   }, []);
 
   async function installApp() {
+    setInstallError("");
     if (!install) {
       setHelp(!help);
       return;
@@ -61,7 +63,13 @@ export default function YardMobilePage() {
       await install.prompt();
       await install.userChoice;
       setInstall(null);
-    } catch {
+    } catch (error) {
+      console.error("Could not start app installation.", error);
+      setInstallError(
+        error instanceof Error
+          ? error.message
+          : "The app could not be installed. Try the browser's install menu.",
+      );
       setHelp(true);
     }
   }
@@ -118,7 +126,7 @@ export default function YardMobilePage() {
                 <p>Measurements at your fingertips</p>
               </div>
 
-              <Link href="/yard/work-orders">
+              <Link href="/yard/workOrders">
                 All jobs <ArrowRight size={16} />
               </Link>
             </div>
@@ -210,6 +218,8 @@ export default function YardMobilePage() {
               {installed ? "App installed" : "Install / setup"}
             </button>
 
+            {installError && <p role="alert">{installError}</p>}
+
             {help && (
               <div className="yard-install-help">
                 <strong>Open on your phone</strong>
@@ -234,12 +244,12 @@ export default function YardMobilePage() {
             <ul>
               <li>Large controls for phone screens</li>
               <li>Camera attachment on supported devices</li>
-              <li>Demo changes saved on this device</li>
+              <li>Changes are saved to the shared Firestore workspace</li>
             </ul>
 
             <p>
-              Offline navigation shows a reconnect page. Full offline editing
-              and Firebase sync are planned.
+              Offline navigation shows a reconnect page. Yard updates require
+              an internet connection and are saved to Firebase.
             </p>
           </section>
         </aside>

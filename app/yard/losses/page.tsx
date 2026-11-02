@@ -18,7 +18,43 @@ import {
 } from "@/components/yard/YardUI";
 
 import { newYardId } from "@/utils/yardData";
+import { auth } from "@/utils/firebase";
 import type { YardLoss } from "@/types/yard";
+
+const maxPhotoDataUrlLength = 400_000;
+
+async function compressPhoto(file: File): Promise<string> {
+  const image = await createImageBitmap(file);
+
+  try {
+    const maxDimension = 1280;
+    const scale = Math.min(
+      1,
+      maxDimension / image.width,
+      maxDimension / image.height,
+    );
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.width * scale));
+    canvas.height = Math.max(1, Math.round(image.height * scale));
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      throw new Error("The photo could not be processed in this browser.");
+    }
+
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.72);
+    if (dataUrl.length > maxPhotoDataUrlLength) {
+      throw new Error(
+        "The compressed photo is too large to save. Choose a smaller photo.",
+      );
+    }
+
+    return dataUrl;
+  } finally {
+    image.close();
+  }
+}
 
 export default function LossesPage() {
   const { data, update } = useYard();
@@ -28,6 +64,7 @@ export default function LossesPage() {
   const [reading, setReading] = useState(false);
   const [error, setError] = useState("");
   const [viewing, setViewing] = useState<YardLoss | null>(null);
+  const [saving, setSaving] = useState(false);
 
   function openReportForm() {
     setCreating(true);
@@ -35,8 +72,9 @@ export default function LossesPage() {
     setError("");
   }
 
-  function selectPhoto(event: ChangeEvent<HTMLInputElement>) {
+  async function selectPhoto(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
+    event.target.value = "";
 
     setPhoto("");
     setError("");
@@ -57,22 +95,21 @@ export default function LossesPage() {
 
     setReading(true);
 
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      setPhoto(String(reader.result));
+    try {
+      setPhoto(await compressPhoto(file));
+    } catch (caughtError) {
+      console.error("Could not process loss report photo.", caughtError);
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "The photo could not be processed. Please try another file.",
+      );
+    } finally {
       setReading(false);
-    };
-
-    reader.onerror = () => {
-      setError("The photo could not be read. Please try another file.");
-      setReading(false);
-    };
-
-    reader.readAsDataURL(file);
+    }
   }
 
-  function save(event: FormEvent<HTMLFormElement>) {
+  async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const form = new FormData(event.currentTarget);
@@ -97,6 +134,12 @@ export default function LossesPage() {
 
     if (reading) return;
 
+    const user = auth.currentUser;
+    if (!user) {
+      setError("Sign in again before submitting this report.");
+      return;
+    }
+
     const report: YardLoss = {
       id: newYardId("LOSS"),
       stockId,
@@ -108,20 +151,31 @@ export default function LossesPage() {
       status: "Pending review",
     };
 
-    const saved = update(
-      (current) => ({
-        ...current,
-        losses: [report, ...current.losses],
-      }),
-      `${report.id}: ${quantity} pieces of ${stockId} reported for review.`,
-    );
-
-    if (saved) {
-      setCreating(false);
-    } else {
-      setError(
-        "Save failed. Remove the photo or free device storage, then try again.",
+    setSaving(true);
+    try {
+      const saved = await update(
+        (current) => ({
+          ...current,
+          losses: [report, ...current.losses],
+        }),
+        `${report.id}: ${quantity} pieces of ${stockId} reported for review.`,
       );
+
+      if (saved) {
+        setCreating(false);
+        setPhoto("");
+      } else {
+        setError("Save failed. Check your connection and try again.");
+      }
+    } catch (caughtError) {
+      console.error("Could not save loss report.", caughtError);
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Save failed. Check your connection and try again.",
+      );
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -144,8 +198,8 @@ export default function LossesPage() {
         <div>
           <strong>Report now. Review before write-off.</strong>
           <p>
-            Reports stay pending in this demo. Inventory is not deducted,
-            and nothing is sent to an administrator yet.
+            Reports are sent to the administrator queue. Inventory is deducted
+            only after approval.
           </p>
         </div>
       </div>
@@ -158,7 +212,7 @@ export default function LossesPage() {
           </div>
 
           <YardBadge tone="amber">
-            {data.losses.length} pending
+            {data.losses.filter((report) => report.status === "Pending review").length} pending
           </YardBadge>
         </div>
 
@@ -197,7 +251,11 @@ export default function LossesPage() {
                   </span>
                 </span>
 
-                <YardBadge tone="amber">Pending review</YardBadge>
+                <YardBadge
+                  tone={report.status === "Pending review" ? "amber" : "green"}
+                >
+                  {report.status}
+                </YardBadge>
               </button>
             ))}
           </div>
@@ -231,7 +289,7 @@ export default function LossesPage() {
           <form className="yard-form" onSubmit={save}>
             <label>
               Lumber product
-              <select name="stockId">
+              <select name="stockId" required disabled={!data.inventory.length}>
                 {data.inventory.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name} · {item.quantity} on hand
@@ -283,7 +341,10 @@ export default function LossesPage() {
                 onChange={selectPhoto}
               />
 
-              <small>JPG, PNG or WebP · up to 1.5 MB</small>
+              <small>
+                JPG, PNG or WebP · up to 1.5 MB input · saved compressed in
+                Firestore
+              </small>
             </label>
 
             {photo && (
@@ -311,7 +372,8 @@ export default function LossesPage() {
             )}
 
             <p className="yard-helper">
-              Saved locally as pending review. No stock write-off is performed.
+              Reports and compressed photos are saved to Firestore for
+              administrator review.
             </p>
 
             <div className="yard-form-actions">
@@ -325,10 +387,10 @@ export default function LossesPage() {
 
               <button
                 type="submit"
-                disabled={reading}
+                disabled={reading || saving || !data.inventory.length}
                 className="yard-button"
               >
-                Save loss report
+                {saving ? "Saving…" : "Save loss report"}
               </button>
             </div>
           </form>

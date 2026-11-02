@@ -4,9 +4,11 @@ import type { DriverDelivery } from "@/data/Delivery";
 export default function DeliveryStopCard({
   delivery,
   onAdvanceStatus,
+  disabled = false,
 }: {
   delivery: DriverDelivery;
   onAdvanceStatus: (deliveryId: string) => void;
+  disabled?: boolean;
 }) {
   const itemCount = delivery.items.reduce((total, item) => total + item.quantity, 0);
 
@@ -83,7 +85,7 @@ export default function DeliveryStopCard({
           type="button"
           className="driver-complete-button"
           onClick={() => onAdvanceStatus(delivery.id)}
-          disabled={delivery.status === "Delivered"}
+          disabled={delivery.status === "Delivered" || disabled}
         >
           <Check size={17} aria-hidden="true" />
           {delivery.status === "Delivered"
