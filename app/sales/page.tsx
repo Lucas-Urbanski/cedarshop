@@ -3,7 +3,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import Navbar from "@/components/navBar";
+import Navbar from "@/components/NavBar";
 import type { SalesProduct, SalesQuoteItem } from "@/types/types";
 import {
   collection,
