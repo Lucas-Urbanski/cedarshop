@@ -1,6 +1,6 @@
 // Cache only the offline fallback.
 // Do not cache authenticated pages or API responses.
-const CACHE = "cedar-yard-fallback-v1";
+const CACHE = "cedar-yard-fallback-v2";
 const FALLBACK = "/yard/offline.html";
 
 self.addEventListener("install", (event) => {

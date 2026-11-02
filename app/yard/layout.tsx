@@ -8,7 +8,6 @@ import "@/styles/yard.css";
 
 export const metadata: Metadata = {
   title: "Yard Operations | The Cedar Shop",
-  manifest: "/yard/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     title: "Cedar Yard",

@@ -28,7 +28,7 @@ const links = [
   { href: "/yard", label: "Overview", icon: LayoutDashboard },
   { href: "/yard/inventory", label: "Inventory", icon: Package },
   {
-    href: "/yard/work-orders",
+    href: "/yard/workOrders",
     label: "Work orders",
     icon: ClipboardList,
   },
@@ -63,7 +63,7 @@ export default function YardShell({ children }: ChildrenProps) {
       "serviceWorker" in navigator
     ) {
       navigator.serviceWorker
-        .register("/yard/sw.js", { scope: "/yard/" })
+        .register("/yardServiceWorker.js", { scope: "/yard/" })
         .catch(() => {});
     }
 
@@ -72,6 +72,10 @@ export default function YardShell({ children }: ChildrenProps) {
       window.removeEventListener("offline", updateConnection);
     };
   }, []);
+
+  if (path === "/yard/offline") {
+    return children;
+  }
 
   return (
     <div className="yard-app">
