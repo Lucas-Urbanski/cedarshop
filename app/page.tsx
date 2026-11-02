@@ -102,8 +102,9 @@ export default function HomePage() {
   const [authError, setAuthError] = useState<string | null>(null);
   const availableWorkflows = workflowNavigation.filter(
     (workflow) =>
-      user !== null &&
-      (workflow.role === user.role || user.role === "Administrator"),
+      workflow.href === "/driver/dashboard" ||
+      workflow.role === (user?.role ?? "Customer") ||
+      user?.role === "Administrator",
   );
 
   useEffect(() => {
