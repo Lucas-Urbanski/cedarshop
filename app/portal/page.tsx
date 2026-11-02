@@ -1,44 +1,50 @@
-// Just a mock test data before connecting to firbase db
-const orders = [
-  {
-    id: "CS-1001",
-    date: "Oct 20, 2026",
-    items: "Pine lumber, 2 × 4",
-    total: "$1,250.00",
-    status: "In Progress",
-  },
-  {
-    id: "CS-1002",
-    date: "Oct 18, 2026",
-    items: "Cedar boards",
-    total: "$860.00",
-    status: "Delivered",
-  },
-  {
-    id: "CS-1003",
-    date: "Oct 15, 2026",
-    items: "Spruce lumber",
-    total: "$2,100.00",
-    status: "Processing",
-  },
-];
+"use client";
+
+import { useMemo } from "react";
+import Link from "next/link";
+import { where } from "firebase/firestore";
+
+import useFirestoreCollection from "@/hooks/useFirestoreCollection";
+import useAuthDisplayName from "@/hooks/useAuthDisplayName";
+import type { CustomerOrderRecord } from "@/types/business";
+import type { SummaryCardProps } from "@/types/types";
+import { auth } from "@/utils/firebase";
 
 const statusStyles: Record<string, string> = {
+  Pending: "bg-amber-100 text-amber-800",
   "In Progress": "bg-blue-100 text-blue-800",
   Delivered: "bg-green-100 text-green-800",
-  Processing: "bg-amber-100 text-amber-800",
+  Cancelled: "bg-red-100 text-red-800",
 };
 
+function displayOrderId(id: string) {
+  return `CS-${id.slice(0, 8).toUpperCase()}`;
+}
+
 export default function CustomerDashboard() {
+  const userId = auth.currentUser?.uid ?? "";
+  const filters = useMemo(
+    () => (userId ? [where("customerUid", "==", userId)] : []),
+    [userId],
+  );
+  const { items: orders, loading, error } =
+    useFirestoreCollection<CustomerOrderRecord>("orders", filters, !!userId);
+  const recentOrders = useMemo(
+    () =>
+      [...orders]
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .slice(0, 5),
+    [orders],
+  );
+  const displayName = useAuthDisplayName("there").split(/\s+/)[0];
+
   return (
     <main className="min-h-screen bg-gray-50 p-6 md:p-10">
       <div className="mx-auto max-w-7xl space-y-8">
         <section>
-          <p className="text-sm font-medium text-green-700">
-            Customer Portal
-          </p>
+          <p className="text-sm font-medium text-green-700">Customer Portal</p>
           <h1 className="mt-2 text-3xl font-bold text-gray-900">
-            Welcome back, Customer
+            Welcome back, {displayName}
           </h1>
           <p className="mt-2 text-gray-600">
             View your orders, track deliveries, and review lumber
@@ -49,20 +55,26 @@ export default function CustomerDashboard() {
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <SummaryCard
             title="Total Orders"
-            value="12"
+            value={loading ? "…" : String(orders.length)}
             description="All-time orders"
           />
           <SummaryCard
             title="In Progress"
-            value="2"
+            value={loading
+              ? "…"
+              : String(orders.filter((order) => order.status === "In Progress").length)}
             description="Orders being processed"
           />
           <SummaryCard
             title="Delivered"
-            value="10"
+            value={loading
+              ? "…"
+              : String(orders.filter((order) => order.status === "Delivered").length)}
             description="Successfully delivered"
           />
         </section>
+
+        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
 
         <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
           <div className="flex items-center justify-between border-b border-gray-200 p-5">
@@ -75,12 +87,12 @@ export default function CustomerDashboard() {
               </p>
             </div>
 
-            <a
+            <Link
               href="/portal/orders"
               className="text-sm font-medium text-green-700 hover:underline"
             >
               View all
-            </a>
+            </Link>
           </div>
 
           <div className="overflow-x-auto">
@@ -96,24 +108,28 @@ export default function CustomerDashboard() {
               </thead>
 
               <tbody className="divide-y divide-gray-100">
-                {orders.map((order) => (
+                {recentOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-gray-50">
                     <td className="whitespace-nowrap px-5 py-4 font-medium text-gray-900">
-                      {order.id}
+                      {displayOrderId(order.id)}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 text-gray-600">
-                      {order.date}
+                      {new Date(order.date).toLocaleDateString("en-CA")}
                     </td>
-                    <td className="px-5 py-4 text-gray-600">
-                      {order.items}
-                    </td>
+                    <td className="px-5 py-4 text-gray-600">{order.items}</td>
                     <td className="whitespace-nowrap px-5 py-4 text-gray-900">
-                      {order.total}
+                      {order.total > 0
+                        ? order.total.toLocaleString("en-CA", {
+                            style: "currency",
+                            currency: "CAD",
+                          })
+                        : "Awaiting quote"}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4">
                       <span
                         className={`rounded-full px-3 py-1 text-xs font-medium ${
-                          statusStyles[order.status]
+                          statusStyles[order.status] ??
+                          "bg-gray-100 text-gray-800"
                         }`}
                       >
                         {order.status}
@@ -121,6 +137,20 @@ export default function CustomerDashboard() {
                     </td>
                   </tr>
                 ))}
+                {loading && (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-8 text-center text-gray-500">
+                      Loading your orders…
+                    </td>
+                  </tr>
+                )}
+                {!loading && recentOrders.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-8 text-center text-gray-500">
+                      You haven’t submitted any orders yet.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -130,15 +160,7 @@ export default function CustomerDashboard() {
   );
 }
 
-function SummaryCard({
-  title,
-  value,
-  description,
-}: {
-  title: string;
-  value: string;
-  description: string;
-}) {
+function SummaryCard({ title, value, description }: SummaryCardProps) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6">
       <p className="text-sm font-medium text-gray-500">{title}</p>

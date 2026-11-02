@@ -10,6 +10,7 @@ import {
   authLinkClassName,
 } from "@/components/auth/authFields";
 import { AuthPageShell } from "@/components/auth/authPageShell";
+import { GuestOnly } from "@/components/auth/guestOnly";
 import { auth } from "@/utils/firebase";
 import { sendPasswordResetEmail } from "firebase/auth";
 
@@ -37,61 +38,63 @@ export default function ForgotPasswordForm() {
   };
 
   return (
-    <AuthPageShell
-      title={success ? "Check your email" : "Reset your password"}
-      description={
-        success
-          ? "Password reset instructions have been sent."
-          : "Enter your email and we'll send you a link to reset your password."
-      }
-    >
-      {success ? (
-        <div className="space-y-6 text-center">
-          <p className="authBodyText">
-            If you registered using your email and password, you will receive a
-            password reset email.
-          </p>
-          <Link href="/auth/login" className={authButtonClassName}>
-            Back to sign in
-          </Link>
-        </div>
-      ) : (
-        <form onSubmit={handleForgotPassword} className="space-y-6">
-          <div>
-            <label htmlFor="email" className={authLabelClassName}>
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              placeholder="Enter your email"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className={authInputClassName}
-            />
-          </div>
-          {error && (
-            <p role="alert" className={authAlertClassName}>
-              {error}
+    <GuestOnly>
+      <AuthPageShell
+        title={success ? "Check your email" : "Reset your password"}
+        description={
+          success
+            ? "Password reset instructions have been sent."
+            : "Enter your email and we'll send you a link to reset your password."
+        }
+      >
+        {success ? (
+          <div className="space-y-6 text-center">
+            <p className="authBodyText">
+              If you registered using your email and password, you will receive
+              a password reset email.
             </p>
-          )}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className={authButtonClassName}
-          >
-            {isLoading ? "Sending..." : "Send reset email"}
-          </button>
-          <p className="authMuted authCenteredText">
-            Remembered your password?{" "}
-            <Link href="/auth/login" className={`ml-1 ${authLinkClassName}`}>
-              Sign In
+            <Link href="/auth/login" className={authButtonClassName}>
+              Back to sign in
             </Link>
-          </p>
-        </form>
-      )}
-    </AuthPageShell>
+          </div>
+        ) : (
+          <form onSubmit={handleForgotPassword} className="space-y-6">
+            <div>
+              <label htmlFor="email" className={authLabelClassName}>
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                placeholder="Enter your email"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className={authInputClassName}
+              />
+            </div>
+            {error && (
+              <p role="alert" className={authAlertClassName}>
+                {error}
+              </p>
+            )}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={authButtonClassName}
+            >
+              {isLoading ? "Sending..." : "Send reset email"}
+            </button>
+            <p className="authMuted authCenteredText">
+              Remembered your password?{" "}
+              <Link href="/auth/login" className={`ml-1 ${authLinkClassName}`}>
+                Sign In
+              </Link>
+            </p>
+          </form>
+        )}
+      </AuthPageShell>
+    </GuestOnly>
   );
 }

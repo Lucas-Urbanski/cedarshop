@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { YardData } from "@/types/yard";
 
 export type UserRole =
   | "Customer"
@@ -6,6 +7,10 @@ export type UserRole =
   | "FloorStaff"
   | "SalesStaff"
   | "Administrator";
+
+export interface ChildrenProps {
+  readonly children: ReactNode;
+}
 
 export interface UserProfile {
   name: string;
@@ -18,6 +23,13 @@ export interface NavbarProps {
   children?: ReactNode;
 }
 
+export interface WorkflowNavigationItem {
+  label: string;
+  href: string;
+  role: UserRole;
+  icon: ReactNode;
+}
+
 export interface ProductCardData {
   name: string;
   sku: string;
@@ -27,6 +39,15 @@ export interface ProductCardData {
 
 export interface ProductCardProps {
   product: ProductCardData;
+}
+
+export interface LogoutButtonProps {
+  className?: string;
+  children?: ReactNode;
+}
+
+export interface RouteGuardProps extends ChildrenProps {
+  allowedRoles?: readonly UserRole[];
 }
 
 export interface AuthPageShellProps {
@@ -44,6 +65,82 @@ export interface CustomerProfile {
   city: string;
   province: string;
   postalCode: string;
+}
+
+export interface AdminProduct {
+  id: string;
+  sku: string;
+  name: string;
+  price: number;
+  cost: number | null;
+  quantity: number;
+}
+
+export type AdminLossReportStatus = "Pending" | "Approved" | "Rejected";
+
+export interface AdminLossReport {
+  id: string;
+  sku: string;
+  product: string;
+  quantity: number;
+  reason: string;
+  status: AdminLossReportStatus;
+}
+
+export interface SalesProduct {
+  id: string;
+  sku: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+export interface SalesQuoteItem {
+  product: SalesProduct;
+  quantity: number;
+}
+
+export interface SummaryCardProps {
+  title: string;
+  value: string;
+  description: string;
+}
+
+export interface YardHeadingProps {
+  eyebrow: string;
+  title: string;
+  description: string;
+  children?: ReactNode;
+}
+
+export type YardBadgeTone = "green" | "amber" | "muted";
+
+export interface YardBadgeProps extends ChildrenProps {
+  tone?: YardBadgeTone;
+}
+
+export interface YardDialogProps extends ChildrenProps {
+  title: string;
+  onClose: () => void;
+}
+
+export interface YardContextValue {
+  data: YardData;
+  ready: boolean;
+  notice: string;
+  update: (
+    change: (current: YardData) => YardData,
+    message: string,
+  ) => Promise<boolean>;
+}
+
+export interface YardInstallPrompt extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<YardInstallPromptOutcome>;
+}
+
+export interface YardInstallPromptOutcome {
+  outcome: "accepted" | "dismissed";
 }
 
 export type OrderStatus = "Pending" | "In Progress" | "Delivered" | "Cancelled";

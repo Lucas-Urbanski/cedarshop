@@ -1,51 +1,13 @@
 
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { Delivery, DeliveryStatus } from "@/types/types";
+import { where } from "firebase/firestore";
 
-const initialDeliveries: Delivery[] = [
-  {
-    id: "DEL-2001",
-    orderId: "CS-1001",
-    date: "Oct 28, 2026",
-    address: "123 Example Street, Calgary, AB",
-    items: "Pine Lumber, 2x4",
-    status: "In Transit",
-    driver: "Assigned driver",
-    trackingNote: "Your order is on its way.",
-  },
-  {
-    id: "DEL-2002",
-    orderId: "CS-1002",
-    date: "Oct 18, 2026",
-    address: "45 Example Avenue, Calgary, AB",
-    items: "Cedar Boards, 1x6",
-    status: "Delivered",
-    driver: "Assigned driver",
-    trackingNote: "Delivery completed.",
-  },
-  {
-    id: "DEL-2003",
-    orderId: "CS-1003",
-    date: "Oct 30, 2026",
-    address: "789 Example Road, Calgary, AB",
-    items: "Spruce Lumber, 2x6",
-    status: "Scheduled",
-    driver: "Not yet assigned",
-    trackingNote: "Your delivery is scheduled.",
-  },
-  {
-    id: "DEL-2004",
-    orderId: "CS-1005",
-    date: "Oct 27, 2026",
-    address: "20 Example Crescent, Calgary, AB",
-    items: "Plywood Sheets",
-    status: "Delayed",
-    driver: "Assigned driver",
-    trackingNote: "Please contact the Cedar Shop team for an update.",
-  },
-];
+import useFirestoreCollection from "@/hooks/useFirestoreCollection";
+import type { DeliveryRecord } from "@/types/business";
+import { auth } from "@/utils/firebase";
 
 function getStatusStyle(status: DeliveryStatus) {
   switch (status) {
@@ -63,9 +25,37 @@ function getStatusStyle(status: DeliveryStatus) {
 }
 
 export default function DeliveriesPage() {
-  const [deliveries] = useState<Delivery[]>(initialDeliveries);
+  const userId = auth.currentUser?.uid ?? "";
+  const filters = useMemo(
+    () => (userId ? [where("customerUid", "==", userId)] : []),
+    [userId],
+  );
+  const {
+    items: deliveryRecords,
+    loading,
+    error,
+  } = useFirestoreCollection<DeliveryRecord>("deliveries", filters, !!userId);
+  const deliveries: Delivery[] = useMemo(
+    () =>
+      deliveryRecords.map((record) => ({
+        id: record.id,
+        orderId: record.orderId,
+        date: record.deliveryDate,
+        address: `${record.address}, ${record.city}`,
+        items: record.itemsSummary,
+        status:
+          record.status === "Ready"
+            ? "Scheduled"
+            : record.status === "In Progress"
+              ? "In Transit"
+              : record.status,
+        driver: record.driverName,
+        trackingNote: record.trackingNote,
+      })),
+    [deliveryRecords],
+  );
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState<DeliveryStatus | "All">("All");
   const [selectedDelivery, setSelectedDelivery] =
     useState<Delivery | null>(null);
 
@@ -109,6 +99,8 @@ export default function DeliveriesPage() {
           </p>
         </div>
 
+        {error && <p role="alert" className="mb-5 text-sm text-red-700">{error}</p>}
+
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="rounded-xl border border-gray-200 bg-white p-5">
             <p className="text-sm text-gray-500">Active Deliveries</p>
@@ -143,7 +135,9 @@ export default function DeliveriesPage() {
 
           <select
             value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
+            onChange={(event) =>
+              setStatusFilter(event.target.value as DeliveryStatus | "All")
+            }
             className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
           >
             <option value="All">All statuses</option>
@@ -212,9 +206,14 @@ export default function DeliveriesPage() {
             </article>
           ))}
 
-          {filteredDeliveries.length === 0 && (
+          {loading && (
+            <div role="status" className="rounded-xl border border-gray-200 bg-white p-10 text-center text-gray-500 lg:col-span-2">
+              Loading deliveries…
+            </div>
+          )}
+          {!loading && filteredDeliveries.length === 0 && (
             <div className="rounded-xl border border-gray-200 bg-white p-10 text-center text-gray-500 lg:col-span-2">
-              No deliveries match your search.
+              No deliveries are available for this account.
             </div>
           )}
         </div>

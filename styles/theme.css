@@ -49,6 +49,8 @@
 
 html {
   min-height: 100%;
+  scroll-behavior: smooth;
+  scroll-padding-top: 1.25rem;
 }
 
 body {
@@ -63,6 +65,31 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+@keyframes cedar-route-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+main:not(.loadingState),
+.portalMain > *,
+.yard-main > *,
+.driver-main > .driver-dashboard {
+  animation: cedar-route-enter 240ms cubic-bezier(0.2, 0.7, 0.25, 1) both;
+}
+
+.driver-route-section,
+.yard-heading,
+.yard-panel {
+  scroll-margin-top: 1.5rem;
 }
 
 button {
@@ -143,7 +170,19 @@ button:focus-visible {
   border-radius: 0.375rem;
   font-size: 0.875rem;
   font-weight: 600;
-  transition: background-color 150ms ease, color 150ms ease;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.headerActions .button:hover {
+  transform: translateY(-1px);
+}
+
+.headerActions .button:active {
+  transform: translateY(0) scale(0.98);
 }
 
 .buttonSettings {
@@ -162,6 +201,75 @@ button:focus-visible {
 
 .siteHeader .buttonSettings:hover {
   background: rgb(255 255 255 / 20%);
+}
+
+.portalTheme .headerActions .button {
+  position: relative;
+}
+
+.portalTheme .headerActions .button[data-active="true"] {
+  box-shadow: 0 5px 16px rgb(0 0 0 / 16%);
+}
+
+.portalTheme .headerActions .button[data-active="true"]::after {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.25rem;
+  left: 0.75rem;
+  height: 2px;
+  transform: scaleX(1);
+  transform-origin: left;
+  border-radius: 2px;
+  background: var(--highlight);
+  content: "";
+  animation: nav-indicator-enter 200ms ease both;
+}
+
+@keyframes nav-indicator-enter {
+  from {
+    transform: scaleX(0.25);
+    opacity: 0.4;
+  }
+
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+.workspace-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.workspace-nav-link,
+.workspace-nav-current {
+  display: inline-flex;
+  min-height: 2.25rem;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  border-radius: 999px;
+}
+
+.workspace-nav-link {
+  color: #e7eee9;
+  transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.workspace-nav-link:hover {
+  transform: translateY(-1px);
+  background: rgb(255 255 255 / 10%);
+  color: #ffffff;
+}
+
+.workspace-nav-current {
+  border: 1px solid rgb(252 211 77 / 25%);
+  background: rgb(252 211 77 / 12%);
+  color: var(--highlight);
+  font-weight: 700;
 }
 
 .buttonPrimary {
@@ -1142,10 +1250,11 @@ button:focus-visible {
   color: #f5f5f4;
   font-size: 0.875rem;
   font-weight: 600;
-  transition: color 150ms ease;
+  transition: color 160ms ease, transform 160ms ease;
 }
 
 .storeNavigationLinks a:hover {
+  transform: translateY(-1px);
   color: var(--highlight);
 }
 
@@ -1403,7 +1512,7 @@ button:focus-visible {
   }
 
   .storeNavigationLinks {
-    display: none;
+    display: grid;
     position: absolute;
     top: 100%;
     right: 0;
@@ -1413,10 +1522,19 @@ button:focus-visible {
     padding: 0.5rem 0.75rem 0.75rem;
     background: var(--header-bg);
     box-shadow: 0 8px 12px var(--shadow);
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-0.4rem);
+    transition:
+      opacity 180ms ease,
+      transform 180ms ease,
+      visibility 180ms;
   }
 
   .storeNavigationLinks.storeNavigationOpen {
-    display: grid;
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
   }
 
   .storeNavigationLinks a {
@@ -1830,9 +1948,16 @@ button:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .popularProductCard,
-  .productAction,
-  .storeNavigationLinks a::after {
-    transition: none;
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }

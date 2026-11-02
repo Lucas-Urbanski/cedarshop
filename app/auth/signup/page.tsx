@@ -15,6 +15,7 @@ import {
   authLinkClassName,
 } from "@/components/auth/authFields";
 import { AuthPageShell } from "@/components/auth/authPageShell";
+import { GuestOnly } from "@/components/auth/guestOnly";
 import { GoogleSignInButton } from "@/components/auth/googleSignInButton";
 import { PasswordInput } from "@/components/auth/passwordInput";
 import { registerShopUser } from "@/utils/firebase";
@@ -51,95 +52,98 @@ export default function SignUpForm() {
   };
 
   return (
-    <AuthPageShell
-      title="Create an account"
-      description=""
-    >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
-        <div>
-          <label htmlFor="fullName" className={authLabelClassName}>
-            Name
-          </label>
-          <input
-            id="fullName"
-            type="text"
-            autoComplete="name"
-            placeholder="Enter your name"
-            {...register("fullName")}
-            aria-invalid={!!errors.fullName}
-            aria-describedby={errors.fullName ? "fullName-error" : undefined}
-            className={authInputClassName}
-          />
-          {errors.fullName?.message && (
-            <p id="fullName-error" className={authFieldErrorClassName}>
-              {errors.fullName.message}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label htmlFor="email" className={authLabelClassName}>
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            placeholder="Enter your email"
-            {...register("email")}
-            aria-invalid={!!errors.email}
-            aria-describedby={errors.email ? "email-error" : undefined}
-            className={authInputClassName}
-          />
-          {errors.email?.message && (
-            <p id="email-error" className={authFieldErrorClassName}>
-              {errors.email.message}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label htmlFor="password" className={authLabelClassName}>
-            Password
-          </label>
-          <PasswordInput
-            id="password"
-            autoComplete="new-password"
-            placeholder="Create your password"
-            {...register("password")}
-            aria-invalid={!!errors.password}
-            aria-describedby={errors.password ? "password-error" : undefined}
-          />
-          {errors.password?.message && (
-            <p id="password-error" className={authFieldErrorClassName}>
-              {errors.password.message}
-            </p>
-          )}
-        </div>
-
-        {authError && (
-          <p role="alert" className={authAlertClassName}>
-            {authError}
-          </p>
-        )}
-
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className={`!mt-9 ${authButtonClassName}`}
+    <GuestOnly>
+      <AuthPageShell title="Create an account" description="">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-6"
+          noValidate
         >
-          {isSubmitting ? "Creating account..." : "Create account"}
-        </button>
-      </form>
+          <div>
+            <label htmlFor="fullName" className={authLabelClassName}>
+              Name
+            </label>
+            <input
+              id="fullName"
+              type="text"
+              autoComplete="name"
+              placeholder="Enter your name"
+              {...register("fullName")}
+              aria-invalid={!!errors.fullName}
+              aria-describedby={errors.fullName ? "fullName-error" : undefined}
+              className={authInputClassName}
+            />
+            {errors.fullName?.message && (
+              <p id="fullName-error" className={authFieldErrorClassName}>
+                {errors.fullName.message}
+              </p>
+            )}
+          </div>
 
-      <GoogleSignInButton />
+          <div>
+            <label htmlFor="email" className={authLabelClassName}>
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder="Enter your email"
+              {...register("email")}
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? "email-error" : undefined}
+              className={authInputClassName}
+            />
+            {errors.email?.message && (
+              <p id="email-error" className={authFieldErrorClassName}>
+                {errors.email.message}
+              </p>
+            )}
+          </div>
 
-      <p className="authMuted authCenteredText">
-        Already have an account?{" "}
-        <Link href="/auth/login" className={`ml-1 ${authLinkClassName}`}>
-          Sign In
-        </Link>
-      </p>
-    </AuthPageShell>
+          <div>
+            <label htmlFor="password" className={authLabelClassName}>
+              Password
+            </label>
+            <PasswordInput
+              id="password"
+              autoComplete="new-password"
+              placeholder="Create your password"
+              {...register("password")}
+              aria-invalid={!!errors.password}
+              aria-describedby={errors.password ? "password-error" : undefined}
+            />
+            {errors.password?.message && (
+              <p id="password-error" className={authFieldErrorClassName}>
+                {errors.password.message}
+              </p>
+            )}
+          </div>
+
+          {authError && (
+            <p role="alert" className={authAlertClassName}>
+              {authError}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className={`!mt-9 ${authButtonClassName}`}
+          >
+            {isSubmitting ? "Creating account..." : "Create account"}
+          </button>
+        </form>
+
+        <GoogleSignInButton />
+
+        <p className="authMuted authCenteredText">
+          Already have an account?{" "}
+          <Link href="/auth/login" className={`ml-1 ${authLinkClassName}`}>
+            Sign In
+          </Link>
+        </p>
+      </AuthPageShell>
+    </GuestOnly>
   );
 }

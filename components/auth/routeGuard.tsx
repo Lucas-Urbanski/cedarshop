@@ -1,25 +1,13 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import type { UserRole } from "@/types/types";
+import type { RouteGuardProps } from "@/types/types";
 import { auth, db } from "@/utils/firebase";
-
-const userRoles: Record<string, UserRole> = {
-  customer: "Customer",
-  driver: "Driver",
-  floorstaff: "FloorStaff",
-  salesstaff: "SalesStaff",
-  administrator: "Administrator",
-};
-
-interface RouteGuardProps {
-  children: ReactNode;
-  allowedRoles?: readonly UserRole[];
-}
+import { getRoleHome, getUserRole } from "@/utils/userProfile";
 
 export default function RouteGuard({
   children,
@@ -43,24 +31,22 @@ export default function RouteGuard({
         setError(null);
 
         if (!firebaseUser?.emailVerified) {
-          router.replace("/");
+          router.replace("/auth/login");
           return;
         }
 
         try {
           const profile = await getDoc(doc(db, "users", firebaseUser.uid));
-          const roleValue = profile.data()?.role;
-          const role =
-            typeof roleValue === "string"
-              ? userRoles[roleValue.toLowerCase().replace(/\s+/g, "")]
-              : undefined;
+          const role = getUserRole(profile.data()?.role);
 
           if (
             !profile.exists() ||
             !role ||
             (allowedRoles && !allowedRoles.includes(role))
           ) {
-            if (isLatestCheck()) router.replace("/");
+            if (isLatestCheck()) {
+              router.replace(role ? getRoleHome(role) : "/");
+            }
             return;
           }
 

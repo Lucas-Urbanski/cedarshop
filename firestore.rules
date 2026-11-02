@@ -2,8 +2,56 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null
+        && request.auth.token.email_verified == true;
+    }
+
+    function hasRole(role) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role
+          || (role == 'administrator'
+            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Administrator')
+          || (role == 'floorstaff'
+            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'FloorStaff')
+          || (role == 'salesstaff'
+            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'SalesStaff')
+          || (role == 'driver'
+            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Driver')
+          || (role == 'customer'
+            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Customer')
+        );
+    }
+
+    function isAdmin() {
+      return hasRole('administrator');
+    }
+
+    function isFloorStaff() {
+      return hasRole('floorstaff');
+    }
+
+    function isSalesStaff() {
+      return hasRole('salesstaff');
+    }
+
+    function isDriver() {
+      return hasRole('driver');
+    }
+
+    function isCustomer() {
+      return hasRole('customer');
+    }
+
+    function isYardStaff() {
+      return isAdmin() || isFloorStaff();
+    }
+
     match /users/{userId} {
-      allow get: if request.auth != null && request.auth.uid == userId;
+      allow get: if signedIn() && request.auth.uid == userId;
+      allow list: if false;
 
       allow create: if request.auth != null
         && request.auth.uid == userId
@@ -52,7 +100,7 @@ service cloud.firestore {
         && (!request.resource.data.keys().hasAny(['company'])
           || request.resource.data.company is string);
 
-      allow update: if request.auth != null
+      allow update: if signedIn()
         && request.auth.uid == userId
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.email == resource.data.email
@@ -84,6 +132,184 @@ service cloud.firestore {
         && request.resource.data.shippingAddress.city is string
         && request.resource.data.shippingAddress.postalCode is string
         && request.resource.data.shippingAddress.province is string;
+
+      allow delete: if false;
+    }
+
+    match /products/{sku} {
+      allow read: if true;
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasAll(['name', 'price'])
+        && request.resource.data.name is string
+        && request.resource.data.price is number
+        && request.resource.data.price >= 0;
+      allow delete: if isAdmin();
+    }
+
+    match /inventory/{sku} {
+      allow read: if isYardStaff() || isSalesStaff();
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasAll([
+          'name',
+          'dimensions',
+          'location',
+          'bay',
+          'quantity',
+          'minimum'
+        ])
+        && request.resource.data.quantity is int
+        && request.resource.data.quantity >= 0;
+      allow update: if isAdmin()
+        || (isFloorStaff()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'quantity',
+            'bay',
+            'location'
+          ])
+          && request.resource.data.quantity is int
+          && request.resource.data.quantity >= 0
+          && request.resource.data.bay is string
+          && request.resource.data.location in [
+            'Outdoor yard',
+            'Warehouse',
+            'Kiln'
+          ]);
+      allow delete: if isAdmin();
+    }
+
+    match /productCosts/{sku} {
+      allow read, write: if isAdmin();
+    }
+
+    match /yardWorkOrders/{workOrderId} {
+      allow read: if isYardStaff();
+      allow create: if isYardStaff()
+        && request.resource.data.createdBy == request.auth.uid
+        && (request.resource.data.status == 'Queued'
+          || (isAdmin() && request.resource.data.status in [
+            'In progress',
+            'Completed'
+          ]))
+        && request.resource.data.quantity is int
+        && request.resource.data.quantity > 0;
+      allow update: if isAdmin()
+        || (isFloorStaff()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status',
+            'updatedAt'
+          ])
+          && request.resource.data.status in [
+            'Queued',
+            'In progress',
+            'Completed'
+          ]);
+      allow delete: if isAdmin();
+    }
+
+    match /yardLossReports/{reportId} {
+      allow read: if isYardStaff();
+      allow create: if isYardStaff()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.status == 'Pending review'
+        && request.resource.data.quantity is int
+        && request.resource.data.quantity > 0
+        && request.resource.data.notes is string
+        && request.resource.data.photo is string
+        && request.resource.data.photo.size() <= 400000;
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status',
+          'reviewedBy',
+          'reviewedAt'
+        ])
+        && request.resource.data.status in ['Approved', 'Rejected']
+        && request.resource.data.reviewedBy == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    match /yardActivity/{activityId} {
+      allow read: if isYardStaff();
+      allow create: if isYardStaff()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.at is string;
+      allow update, delete: if false;
+    }
+
+    match /orders/{orderId} {
+      allow get, list: if isAdmin()
+        || isSalesStaff()
+        || (isCustomer() && resource.data.customerUid == request.auth.uid);
+      allow create: if isCustomer()
+        && request.resource.data.customerUid == request.auth.uid
+        && request.resource.data.status == 'Pending'
+        && request.resource.data.total == 0
+        && request.resource.data.quantity is int
+        && request.resource.data.quantity > 0
+        && request.resource.data.quantity <= 1000000
+        && request.resource.data.items is string
+        && request.resource.data.deliveryAddress is string;
+      allow update: if isAdmin()
+        || (isCustomer()
+          && resource.data.customerUid == request.auth.uid
+          && resource.data.status == 'Pending'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'items',
+            'quantity',
+            'unit',
+            'status'
+          ])
+          && request.resource.data.items is string
+          && request.resource.data.quantity is int
+          && request.resource.data.quantity > 0
+          && request.resource.data.total == resource.data.total
+          && request.resource.data.status in ['Pending', 'Cancelled']);
+      allow delete: if isAdmin();
+    }
+
+    match /deliveries/{deliveryId} {
+      allow get, list: if isAdmin()
+        || (isCustomer() && resource.data.customerUid == request.auth.uid)
+        || (isDriver()
+          && (resource.data.driverUid == request.auth.uid
+            || resource.data.isDemo == true));
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (isDriver()
+          && (resource.data.driverUid == request.auth.uid
+            || resource.data.isDemo == true)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status',
+            'updatedAt'
+          ])
+          && request.resource.data.status in [
+            'Ready',
+            'In Progress',
+            'Delivered'
+          ]);
+    }
+
+    match /salesQuotes/{quoteId} {
+      allow read: if isAdmin()
+        || (isSalesStaff() && resource.data.createdBy == request.auth.uid);
+      allow create: if isSalesStaff()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.customerName is string
+        && request.resource.data.items is list
+        && request.resource.data.subtotal is number
+        && request.resource.data.discountPercent is number
+        && request.resource.data.discountPercent >= 0
+        && request.resource.data.discountPercent <= 100
+        && request.resource.data.total is number;
+      allow update, delete: if isAdmin();
+    }
+
+    match /system/{documentId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if isAdmin();
     }
   }
 }

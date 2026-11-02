@@ -1,12 +1,11 @@
 "use client";
 
-import { ThemeContextValue, Theme } from "@/types/types";
+import type { ChildrenProps, Theme, ThemeContextValue } from "@/types/types";
 import {
   createContext,
   useContext,
   useEffect,
   useSyncExternalStore,
-  type ReactNode,
 } from "react";
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -45,7 +44,7 @@ function saveTheme(theme: Theme) {
   themeListeners.forEach((notify) => notify());
 }
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
+export function ThemeProvider({ children }: ChildrenProps) {
   const theme = useSyncExternalStore(
     subscribeToTheme,
     getThemeSnapshot,
@@ -56,7 +55,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
-  const value = {
+  const value: ThemeContextValue = {
     theme,
     toggleTheme: () => saveTheme(theme === "dark" ? "light" : "dark"),
   };

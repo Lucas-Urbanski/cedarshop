@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import BrandLogo from "@/components/brandLogo";
+import { LogoutButton } from "@/components/auth/logoutButton";
 
 const navLinks = [
   { label: "Dashboard", href: "/portal" },
@@ -37,6 +38,7 @@ export default function CustomerNavbar() {
                 key={link.href}
                 href={link.href}
                 aria-current={isActive ? "page" : undefined}
+                data-active={isActive ? "true" : undefined}
                 className={
                   isActive ? "button buttonPrimary" : "button buttonSettings"
                 }
@@ -45,6 +47,7 @@ export default function CustomerNavbar() {
               </Link>
             );
           })}
+          <LogoutButton className="button buttonSettings" />
         </nav>
       </div>
     </header>
