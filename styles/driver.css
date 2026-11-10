@@ -9,6 +9,12 @@
   color: var(--text-primary);
 }
 
+.workspace-main.driver-workspace-main {
+  width: 100%;
+  max-width: none;
+  padding: 0;
+}
+
 .driver-app h1,
 .driver-app h2,
 .driver-app h3,
@@ -399,6 +405,27 @@
   background: var(--surface);
 }
 
+.driver-topbar-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 16px;
+}
+
+.driver-header-brand {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
+.driver-header-logo {
+  display: block;
+  width: 100px;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0.25rem 0.5rem rgb(0 0 0 / 20%));
+}
+
 .driver-breadcrumb {
   display: flex;
   align-items: center;
@@ -444,6 +471,12 @@
 
 .driver-profile strong {
   font-size: 12px;
+}
+
+.driver-profile .driver-user-name {
+  display: inline-block;
+  color: var(--driver-gold);
+  font-size: 15px;
 }
 
 .driver-profile small {
@@ -997,39 +1030,23 @@
   }
 
   .driver-sidebar {
-    position: static;
+    position: fixed;
+    z-index: 40;
+    inset: auto 0 0;
+    display: flex;
     width: 100%;
     overflow: visible;
-    padding: 10px 15px 12px;
+    min-height: calc(70px + env(safe-area-inset-bottom));
+    flex-direction: row;
+    justify-content: center;
+    padding: 7px 8px max(7px, env(safe-area-inset-bottom));
+    border-top: 1px solid #ffffff1a;
+    border-right: 0;
+    box-shadow: 0 -8px 28px rgb(0 0 0 / 18%);
   }
 
   .driver-sidebar::after {
     display: none;
-  }
-
-  .driver-brand {
-    min-height: 48px;
-    margin-bottom: 9px;
-    padding: 0 2px 9px;
-  }
-
-  .driver-brand-mark {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-  }
-
-  .driver-brand-mark img {
-    width: 32px;
-    height: 26px;
-  }
-
-  .driver-brand-copy strong {
-    font-size: 10px;
-  }
-
-  .driver-brand-copy small {
-    font-size: 8px;
   }
 
   .driver-nav-heading,
@@ -1040,7 +1057,9 @@
 
   .driver-nav {
     display: flex;
-    gap: 8px;
+    width: min(100%, 560px);
+    justify-content: space-around;
+    gap: 4px;
     overflow-x: auto;
     scrollbar-width: none;
   }
@@ -1050,18 +1069,26 @@
   }
 
   .driver-nav a {
-    flex: 1 0 auto;
-    min-width: 145px;
-    min-height: 44px;
-    gap: 8px;
-    padding: 5px 8px;
+    min-width: 0;
+    min-height: 58px;
+    flex: 1 1 0;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    padding: 4px 3px;
     border-radius: 10px;
+    text-align: center;
+  }
+
+  .driver-nav a.active {
+    box-shadow: inset 0 -2px var(--driver-gold);
   }
 
   .driver-nav-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+    width: 27px;
+    height: 27px;
+    border: 0;
+    background: transparent;
   }
 
   .driver-nav-copy {
@@ -1070,6 +1097,10 @@
 
   .driver-nav-copy strong {
     font-size: 10px;
+  }
+
+  .driver-nav-copy {
+    gap: 2px;
   }
 
   .driver-nav-copy small,
@@ -1083,12 +1114,21 @@
   }
 
   .driver-topbar {
-    height: 64px;
-    padding: 0 17px;
+    min-height: 72px;
+    height: auto;
+    padding: 0 14px;
+  }
+
+  .driver-topbar-heading {
+    gap: 8px;
+  }
+
+  .driver-header-logo {
+    width: 100px;
   }
 
   .driver-main {
-    padding: 20px 17px 0;
+    padding: 20px 17px 100px;
   }
 
   .driver-metrics {
@@ -1158,5 +1198,11 @@
 
   .driver-footer {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 600px) {
+  .driver-header-logo {
+    width: 76px;
   }
 }

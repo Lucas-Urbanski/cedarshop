@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  useState,
-  type FormEvent,
-  type ChangeEvent,
-} from "react";
+import { useState, type FormEvent, type ChangeEvent } from "react";
 
 import { Camera, Plus, TriangleAlert, Clock3 } from "lucide-react";
 
@@ -81,11 +77,7 @@ export default function LossesPage() {
 
     if (!file) return;
 
-    const supportedTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-    ];
+    const supportedTypes = ["image/jpeg", "image/png", "image/webp"];
 
     if (!supportedTypes.includes(file.type) || file.size > 1500000) {
       setError("Choose a JPG, PNG or WebP photo smaller than 1.5 MB.");
@@ -212,7 +204,11 @@ export default function LossesPage() {
           </div>
 
           <YardBadge tone="amber">
-            {data.losses.filter((report) => report.status === "Pending review").length} pending
+            {
+              data.losses.filter((report) => report.status === "Pending review")
+                .length
+            }{" "}
+            pending
           </YardBadge>
         </div>
 
@@ -241,9 +237,10 @@ export default function LossesPage() {
                   </small>
 
                   <strong>
-                    {data.inventory.find(
-                      (item) => item.id === report.stockId,
-                    )?.name}
+                    {
+                      data.inventory.find((item) => item.id === report.stockId)
+                        ?.name
+                    }
                   </strong>
 
                   <span>
@@ -271,10 +268,7 @@ export default function LossesPage() {
               report.
             </p>
 
-            <button
-              className="yard-button secondary"
-              onClick={openReportForm}
-            >
+            <button className="yard-button secondary" onClick={openReportForm}>
               Create first report
             </button>
           </EmptyState>
@@ -282,10 +276,7 @@ export default function LossesPage() {
       </section>
 
       {creating && (
-        <YardDialog
-          title="New loss report"
-          onClose={() => setCreating(false)}
-        >
+        <YardDialog title="New loss report" onClose={() => setCreating(false)}>
           <form className="yard-form" onSubmit={save}>
             <label>
               Lumber product
@@ -333,14 +324,12 @@ export default function LossesPage() {
             <label className="yard-photo-input">
               <Camera size={24} />
               Take or attach a photo (optional)
-
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 capture="environment"
                 onChange={selectPhoto}
               />
-
               <small>
                 JPG, PNG or WebP · up to 1.5 MB input · saved compressed in
                 Firestore
@@ -368,7 +357,9 @@ export default function LossesPage() {
             {reading && <p role="status">Reading photo…</p>}
 
             {error && (
-              <p role="alert" className="yard-form-error">{error}</p>
+              <p role="alert" className="yard-form-error">
+                {error}
+              </p>
             )}
 
             <p className="yard-helper">
@@ -403,9 +394,7 @@ export default function LossesPage() {
             <YardBadge tone="amber">{viewing.status}</YardBadge>
 
             <h3>
-              {data.inventory.find(
-                (item) => item.id === viewing.stockId,
-              )?.name}
+              {data.inventory.find((item) => item.id === viewing.stockId)?.name}
             </h3>
 
             <p>

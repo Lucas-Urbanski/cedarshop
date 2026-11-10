@@ -9,6 +9,12 @@
   color: var(--text-primary);
 }
 
+.workspace-main.yard-workspace-main {
+  width: 100%;
+  max-width: none;
+  padding: 0;
+}
+
 .yard-app h1,
 .yard-app h2,
 .yard-app h3,
@@ -29,11 +35,13 @@
 
 /* Sidebar */
 .yard-sidebar {
-  width: 224px;
+  width: 272px;
   flex: none;
-  background: #093d30;
+  background:
+    radial-gradient(ellipse at 10% 55%, #2f67501a, transparent 47%),
+    linear-gradient(165deg, #17392f 0%, #102b25 46%, #0c211d 100%);
   color: #edf6ef;
-  padding: 30px 18px;
+  padding: 25px 18px 17px;
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -68,7 +76,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  border-radius: 7px;
+  border: 1px solid transparent;
+  border-radius: 12px;
   color: #bbd2c5;
   font-size: 13px;
   min-height: 46px;
@@ -87,9 +96,10 @@
 }
 
 .yard-sidebar nav a.active {
-  background: #ffffff12;
+  border-color: #d6b66f40;
+  background: linear-gradient(105deg, #d6b66f1c, #ffffff09 80%);
   color: #fff;
-  box-shadow: inset 3px 0 #d3b778;
+  box-shadow: inset 3px 0 #d6b66f, 0 5px 18px #071a1524;
 }
 
 .yard-sidebar nav a:focus-visible {
@@ -129,8 +139,8 @@
 
 /* Header and page layout */
 .yard-body {
-  margin-left: 224px;
-  width: calc(100% - 224px);
+  margin-left: 272px;
+  width: calc(100% - 272px);
 }
 
 .yard-topbar {
@@ -144,8 +154,39 @@
   font-size: 12px;
 }
 
+.yard-topbar-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 16px;
+}
+
+.yard-header-brand {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
+.yard-header-logo {
+  display: block;
+  width: 100px;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0.25rem 0.5rem rgb(0 0 0 / 20%));
+}
+
 .yard-breadcrumb { color: var(--text-muted); margin-right: 9px; }
 .yard-top-actions { display: flex; gap: 20px; align-items: center; }
+
+.yard-header-name {
+  display: inline-block;
+  max-width: 15rem;
+  overflow: hidden;
+  color: var(--accent);
+  font-size: 1.05rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .yard-connection {
   display: flex;
@@ -1086,6 +1127,10 @@
 
 /* Phones */
 @media (max-width: 760px) {
+  .workspace-main.yard-workspace-main {
+    padding-bottom: 76px;
+  }
+
   .yard-sidebar {
     position: fixed;
     top: auto;
@@ -1126,9 +1171,12 @@
   .yard-sidebar-foot { display: none; }
 
   .yard-body { width: 100%; margin: 0; padding-bottom: 76px; }
-  .yard-topbar { height: 62px; padding: 0 18px; }
+  .yard-topbar { height: auto; min-height: 72px; padding: 0 14px; }
+  .yard-topbar-heading { gap: 8px; }
+  .yard-header-logo { width: 100px; }
   .yard-breadcrumb { display: none; }
   .yard-top-actions { gap: 12px; }
+  .yard-header-name { max-width: 8rem; }
   .yard-avatar { display: none; }
   .yard-main { padding: 20px 18px 28px; }
 
@@ -1241,4 +1289,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .yard-app * { transition: none !important; }
+}
+
+@media (max-width: 600px) {
+  .yard-header-logo { width: 76px; }
 }

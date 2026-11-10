@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -10,8 +9,11 @@ import type { ProductRecord } from "@/types/business";
 import { auth, db } from "@/utils/firebase";
 
 export default function NewOrderPage() {
-  const { items: products, loading: productsLoading, error: productsError } =
-    useFirestoreCollection<ProductRecord>("products");
+  const {
+    items: products,
+    loading: productsLoading,
+    error: productsError,
+  } = useFirestoreCollection<ProductRecord>("products");
   const [form, setForm] = useState({
     productType: "",
     dimensions: "",
@@ -35,7 +37,7 @@ export default function NewOrderPage() {
   function handleChange(
     event: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    >,
   ) {
     const { name, value } = event.target;
 
@@ -120,20 +122,9 @@ export default function NewOrderPage() {
     <div className="min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-3xl">
         <div className="mb-6">
-          <Link
-            href="/portal/orders"
-            className="text-sm font-medium text-green-800 hover:underline"
-          >
-            ← Back to Orders
-          </Link>
-
           <h1 className="mt-4 text-3xl font-bold text-gray-900">
             New Order Request
           </h1>
-
-          <p className="mt-2 text-gray-600">
-            Tell us what lumber you need and how you would like it delivered.
-          </p>
         </div>
 
         {message && (
@@ -337,14 +328,12 @@ export default function NewOrderPage() {
           </div>
 
           <div className="flex flex-col-reverse gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4 sm:flex-row sm:justify-end">
-
-          <Link
-            href="/portal/orders"
-            className="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-center text-sm font-semibold hover:bg-gray-100"
-          >
-            Cancel
-          </Link>
-
+            <Link
+              href="/portal/orders"
+              className="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-center text-sm font-semibold hover:bg-gray-100"
+            >
+              Cancel
+            </Link>
 
             <button
               type="submit"

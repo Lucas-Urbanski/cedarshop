@@ -3,23 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Package, Route, Search, Truck } from "lucide-react";
 import DeliveryStopCard from "@/components/driver/DeliveryStopCard";
-import {
-  type DriverStopStatus,
-} from "@/data/Delivery";
-import {
-  doc,
-  runTransaction,
-  where,
-} from "firebase/firestore";
+import { doc, runTransaction, where } from "firebase/firestore";
 
 import useFirestoreCollection from "@/hooks/useFirestoreCollection";
 import useAuthDisplayName from "@/hooks/useAuthDisplayName";
 import type { DeliveryRecord } from "@/types/business";
+import type { DriverStatusFilter, DriverStopStatus } from "@/types/types";
 import { auth, db } from "@/utils/firebase";
 
-type StatusFilter = "All stops" | DriverStopStatus;
-
-const statusOptions: StatusFilter[] = [
+const statusOptions: DriverStatusFilter[] = [
   "All stops",
   "Ready",
   "In Progress",
@@ -28,7 +20,8 @@ const statusOptions: StatusFilter[] = [
 
 export default function DriverDashboardPage() {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("All stops");
+  const [statusFilter, setStatusFilter] =
+    useState<DriverStatusFilter>("All stops");
   const [actionError, setActionError] = useState("");
   const [updatingStop, setUpdatingStop] = useState<string | null>(null);
   const [today, setToday] = useState("");
@@ -38,9 +31,7 @@ export default function DriverDashboardPage() {
 
   useEffect(() => {
     const now = new Date();
-    const localDate = new Date(
-      now.getTime() - now.getTimezoneOffset() * 60_000,
-    )
+    const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
       .toISOString()
       .slice(0, 10);
     const dateLabel = now.toLocaleDateString("en-CA", {
@@ -61,10 +52,7 @@ export default function DriverDashboardPage() {
     [today, userId],
   );
   const demoFilters = useMemo(
-    () => [
-      where("isDemo", "==", true),
-      where("deliveryDate", "==", today),
-    ],
+    () => [where("isDemo", "==", true), where("deliveryDate", "==", today)],
     [today],
   );
   const assigned = useFirestoreCollection<DeliveryRecord>(
@@ -82,8 +70,8 @@ export default function DriverDashboardPage() {
     [...assigned.items, ...demo.items].forEach((item) =>
       records.set(item.id, item),
     );
-    return [...records.values()].map(({ customerUid, driverUid, ...delivery }) =>
-      delivery,
+    return [...records.values()].map(
+      ({ customerUid, driverUid, ...delivery }) => delivery,
     );
   }, [assigned.items, demo.items]);
   const loading = !today || assigned.loading || demo.loading;
@@ -108,7 +96,9 @@ export default function DriverDashboardPage() {
     });
   }, [route, search, statusFilter]);
 
-  const completedStops = route.filter((stop) => stop.status === "Delivered").length;
+  const completedStops = route.filter(
+    (stop) => stop.status === "Delivered",
+  ).length;
   const remainingPieces = route
     .filter((stop) => stop.status !== "Delivered")
     .flatMap((stop) => stop.items)
@@ -152,7 +142,6 @@ export default function DriverDashboardPage() {
         <div>
           <p className="driver-eyebrow">{todayLabel}</p>
           <h1 id="driver-title">Welcome, {driverName.split(/\s+/)[0]}</h1>
-          <p>Your route is ready. Here’s what you’ll be delivering today.</p>
         </div>
         <div className="driver-welcome-icon" aria-hidden="true">
           <Truck size={42} strokeWidth={1.4} />
@@ -161,24 +150,33 @@ export default function DriverDashboardPage() {
 
       <div className="driver-metrics" aria-label="Today's route summary">
         <article>
-          <span className="driver-metric-icon"><Route size={19} /></span>
+          <span className="driver-metric-icon">
+            <Route size={19} />
+          </span>
           <div>
             <p>Total stops</p>
             <strong>{route.length}</strong>
           </div>
         </article>
         <article>
-          <span className="driver-metric-icon"><Package size={19} /></span>
+          <span className="driver-metric-icon">
+            <Package size={19} />
+          </span>
           <div>
             <p>Pieces to deliver</p>
             <strong>{remainingPieces}</strong>
           </div>
         </article>
         <article>
-          <span className="driver-metric-icon"><CheckCircle2 size={19} /></span>
+          <span className="driver-metric-icon">
+            <CheckCircle2 size={19} />
+          </span>
           <div>
             <p>Stops completed</p>
-            <strong>{completedStops}<span> / {route.length}</span></strong>
+            <strong>
+              {completedStops}
+              <span> / {route.length}</span>
+            </strong>
           </div>
         </article>
       </div>
@@ -192,11 +190,15 @@ export default function DriverDashboardPage() {
         </p>
       )}
 
-      <section id="stops" className="driver-route-section" aria-labelledby="route-title">
+      <section
+        id="stops"
+        className="driver-route-section"
+        aria-labelledby="route-title"
+      >
         <div className="driver-route-heading">
           <div>
             <p className="driver-eyebrow">YOUR DELIVERY PLAN</p>
-            <h2 id="route-title">Today’s route</h2>
+            <h2 id="route-title">Today's route</h2>
             <p>Check each load and destination before heading out.</p>
           </div>
           <span className="driver-route-count">
@@ -220,12 +222,14 @@ export default function DriverDashboardPage() {
             <select
               value={statusFilter}
               onChange={(event) =>
-                setStatusFilter(event.target.value as StatusFilter)
+                setStatusFilter(event.target.value as DriverStatusFilter)
               }
               aria-label="Filter stops by status"
             >
               {statusOptions.map((status) => (
-                <option key={status} value={status}>{status}</option>
+                <option key={status} value={status}>
+                  {status}
+                </option>
               ))}
             </select>
           </label>
@@ -242,12 +246,14 @@ export default function DriverDashboardPage() {
               />
             ))}
           </div>
-        ) : !loading && (
-          <div className="driver-empty-state">
-            <Package size={26} aria-hidden="true" />
-            <strong>No stops found</strong>
-            <p>Try a different search or status filter.</p>
-          </div>
+        ) : (
+          !loading && (
+            <div className="driver-empty-state">
+              <Package size={26} aria-hidden="true" />
+              <strong>No stops found</strong>
+              <p>Try a different search or status filter.</p>
+            </div>
+          )
         )}
       </section>
     </section>

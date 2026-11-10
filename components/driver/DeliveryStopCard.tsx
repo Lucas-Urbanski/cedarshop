@@ -1,15 +1,11 @@
 import { Check, Clock3, MapPin, Package, Phone } from "lucide-react";
-import type { DriverDelivery } from "@/data/Delivery";
+import type { DeliveryStopCardProps } from "@/types/types";
 
 export default function DeliveryStopCard({
   delivery,
   onAdvanceStatus,
   disabled = false,
-}: {
-  delivery: DriverDelivery;
-  onAdvanceStatus: (deliveryId: string) => void;
-  disabled?: boolean;
-}) {
+}: DeliveryStopCardProps) {
   const itemCount = delivery.items.reduce((total, item) => total + item.quantity, 0);
 
   return (

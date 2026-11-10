@@ -1,12 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import {
-  Search,
-  SlidersHorizontal,
-  Package,
-  MapPin,
-} from "lucide-react";
+import { Search, SlidersHorizontal, Package, MapPin } from "lucide-react";
 
 import { useYard } from "@/components/yard/YardProvider";
 import {
@@ -29,10 +24,9 @@ export default function InventoryPage() {
   const [saving, setSaving] = useState(false);
 
   const items = data.inventory.filter((item) => {
-    const matchesSearch =
-      `${item.name} ${item.id} ${item.bay}`
-        .toLowerCase()
-        .includes(search.toLowerCase());
+    const matchesSearch = `${item.name} ${item.id} ${item.bay}`
+      .toLowerCase()
+      .includes(search.toLowerCase());
 
     const matchesLocation =
       location === "All locations" || item.location === location;
@@ -53,12 +47,7 @@ export default function InventoryPage() {
     const reason = String(form.get("reason")).trim();
     const nextLocation = String(form.get("location")) as YardLocation;
 
-    if (
-      !Number.isSafeInteger(quantity) ||
-      quantity < 0 ||
-      !bay ||
-      !reason
-    ) {
+    if (!Number.isSafeInteger(quantity) || quantity < 0 || !bay || !reason) {
       setError("Enter a valid whole-piece count, bay and reason.");
       return;
     }
@@ -137,7 +126,9 @@ export default function InventoryPage() {
             onChange={(event) => setLocation(event.target.value)}
           >
             {["All locations", "Outdoor yard", "Warehouse", "Kiln"].map(
-              (area) => <option key={area}>{area}</option>,
+              (area) => (
+                <option key={area}>{area}</option>
+              ),
             )}
           </select>
 
@@ -235,10 +226,7 @@ export default function InventoryPage() {
       </section>
 
       {editing && (
-        <YardDialog
-          title="Update inventory"
-          onClose={() => setEditing(null)}
-        >
+        <YardDialog title="Update inventory" onClose={() => setEditing(null)}>
           <form className="yard-form" onSubmit={save}>
             <p>
               {editing.name} · {editing.id}
@@ -294,7 +282,9 @@ export default function InventoryPage() {
             </p>
 
             {error && (
-              <p className="yard-form-error" role="alert">{error}</p>
+              <p className="yard-form-error" role="alert">
+                {error}
+              </p>
             )}
 
             <div className="yard-form-actions">

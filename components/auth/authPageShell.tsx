@@ -33,6 +33,11 @@ export function AuthPageShell({
 
         <div className="authContent">{children}</div>
       </section>
+      <nav className="authMobileNav" aria-label="Account navigation">
+        <Link href="/">Home</Link>
+        <Link href="/auth/login">Sign in</Link>
+        <Link href="/auth/signup">Create account</Link>
+      </nav>
     </main>
   );
 }

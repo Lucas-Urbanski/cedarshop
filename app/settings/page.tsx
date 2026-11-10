@@ -5,10 +5,8 @@ import { onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/components/themeProvider";
-import { LogoutButton } from "@/components/auth/logoutButton";
-import Navbar from "@/components/NavBar";
 import { auth, db } from "@/utils/firebase";
-import type { CustomerProfile, UserProfile } from "@/types/types";
+import type { CustomerProfile } from "@/types/types";
 import { getUserRole } from "@/utils/userProfile";
 
 const emptyProfile: CustomerProfile = {
@@ -55,7 +53,6 @@ function errorMessage(error: unknown): string {
 
 export default function SettingsPage() {
   const { theme, toggleTheme } = useTheme();
-  const [user, setUser] = useState<UserProfile | null>(null);
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<CustomerProfile>(emptyProfile);
   const [savedProfile, setSavedProfile] = useState<CustomerProfile>(emptyProfile);
@@ -78,7 +75,6 @@ export default function SettingsPage() {
       setProfileMessage(null);
 
       if (!firebaseUser) {
-        setUser(null);
         setProfile(emptyProfile);
         setSavedProfile(emptyProfile);
         setIsLoading(false);
@@ -101,19 +97,9 @@ export default function SettingsPage() {
         if (isCurrent) {
           setProfile(loadedProfile);
           setSavedProfile(loadedProfile);
-          setUser({
-            name:
-              readString(data.fullName) ||
-              firebaseUser.displayName ||
-              firebaseUser.email ||
-              "Customer",
-            email: firebaseUser.email ?? "",
-            role,
-          });
         }
       } catch (error: unknown) {
         if (isCurrent) {
-          setUser(null);
           setProfileError(errorMessage(error));
         }
       } finally {
@@ -191,9 +177,6 @@ export default function SettingsPage() {
       };
       setProfile(updatedProfile);
       setSavedProfile(updatedProfile);
-      setUser((current) =>
-        current ? { ...current, name: fullName } : current,
-      );
       setIsEditing(false);
       setProfileMessage("Profile saved.");
     } catch (error: unknown) {
@@ -206,9 +189,6 @@ export default function SettingsPage() {
   const inputClassName = `profileInput${isEditing ? "" : " profileInputDisabled"}`;
 
   return (
-    <div className="appShell">
-      <Navbar user={user} />
-
       <main className="settingsMain">
         <div className="settingsHeading">
           <p className="eyebrow">Preferences</p>
@@ -240,18 +220,6 @@ export default function SettingsPage() {
             <span className="themeSwitchThumb" />
           </button>
         </section>
-
-        {authUser ? (
-          <section className="settingsPanel settingsSignOutPanel">
-            <div className="settingsCopy">
-              <div>
-                <h2>Sign out</h2>
-                <p>Sign out of your Cedar Shop account on this device.</p>
-              </div>
-            </div>
-            <LogoutButton className="profileSignOutButton" />
-          </section>
-        ) : null}
 
         <section className="profileSection" aria-labelledby="profile-heading">
           <div className="settingsHeading">
@@ -443,6 +411,5 @@ export default function SettingsPage() {
           ) : null}
         </section>
       </main>
-    </div>
   );
 }

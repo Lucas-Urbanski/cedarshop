@@ -2,8 +2,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import Navbar from "@/components/NavBar";
 import type { AdminLossReport, AdminProduct } from "@/types/types";
 import {
   doc,
@@ -246,19 +244,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="appShell">
-      <Navbar user={null}>
-        <nav className="workspace-nav" aria-label="Administrator navigation">
-          <Link href="/" className="workspace-nav-link">
-            Home
-          </Link>
-          <span className="workspace-nav-current" aria-current="page">
-            Admin Dashboard
-          </span>
-        </nav>
-      </Navbar>
-
-      <main className="mx-auto w-full max-w-7xl flex-1 space-y-7 px-4 py-8 text-[var(--text-primary)] sm:px-6 lg:px-8">
+      <main className="workspace-page flex-1 space-y-7 text-[var(--text-primary)]">
         <header>
           <p className="eyebrow">The Cedar Shop</p>
           <h1 className="text-3xl font-bold tracking-tight">
@@ -555,6 +541,5 @@ export default function AdminDashboard() {
           Firestore. Demonstration records are explicitly marked when loaded.
         </p>
       </main>
-    </div>
   );
 }

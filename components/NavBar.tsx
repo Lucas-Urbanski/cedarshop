@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { onAuthStateChanged } from "firebase/auth";
 import BrandLogo from "@/images/CedarShopLogo.png";
@@ -11,6 +12,9 @@ import type { NavbarProps } from "@/types/types";
 
 export default function Navbar({ user, children }: NavbarProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const pathname = usePathname();
+  const router = useRouter();
+  const isSettingsPage = pathname.startsWith("/settings");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
@@ -47,10 +51,27 @@ export default function Navbar({ user, children }: NavbarProps) {
         <div className="headerActions">
           {isAuthenticated === true ? (
             <>
-              {user ? <span>Hello, {user.name.split(" ")[0]}</span> : null}
-              <Link href="/settings" className="button buttonSettings">
-                Settings
-              </Link>
+              {user ? (
+                <span className="headerGreeting">
+                  Hello,{" "}
+                  <strong className="headerUserName">
+                    {user.name.split(" ")[0]}
+                  </strong>
+                </span>
+              ) : null}
+              {isSettingsPage ? (
+                <button
+                  type="button"
+                  className="button buttonSettings"
+                  onClick={() => router.back()}
+                >
+                  Back
+                </button>
+              ) : (
+                <Link href="/settings" className="button buttonSettings">
+                  Settings
+                </Link>
+              )}
               <LogoutButton className="button buttonSettings" />
             </>
           ) : isAuthenticated === false ? (

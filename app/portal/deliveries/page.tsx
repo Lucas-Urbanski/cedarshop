@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useState } from "react";
@@ -55,9 +54,12 @@ export default function DeliveriesPage() {
     [deliveryRecords],
   );
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<DeliveryStatus | "All">("All");
-  const [selectedDelivery, setSelectedDelivery] =
-    useState<Delivery | null>(null);
+  const [statusFilter, setStatusFilter] = useState<DeliveryStatus | "All">(
+    "All",
+  );
+  const [selectedDelivery, setSelectedDelivery] = useState<Delivery | null>(
+    null,
+  );
 
   const filteredDeliveries = deliveries.filter((delivery) => {
     const searchTerm = search.toLowerCase();
@@ -75,31 +77,29 @@ export default function DeliveriesPage() {
 
   const activeCount = deliveries.filter(
     (delivery) =>
-      delivery.status === "Scheduled" ||
-      delivery.status === "In Transit"
+      delivery.status === "Scheduled" || delivery.status === "In Transit",
   ).length;
 
   const deliveredCount = deliveries.filter(
-    (delivery) => delivery.status === "Delivered"
+    (delivery) => delivery.status === "Delivered",
   ).length;
 
   const delayedCount = deliveries.filter(
-    (delivery) => delivery.status === "Delayed"
+    (delivery) => delivery.status === "Delayed",
   ).length;
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            My Deliveries
-          </h1>
-          <p className="mt-2 text-gray-600">
-            Check delivery schedules and track your lumber orders.
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900">My Deliveries</h1>
         </div>
 
-        {error && <p role="alert" className="mb-5 text-sm text-red-700">{error}</p>}
+        {error && (
+          <p role="alert" className="mb-5 text-sm text-red-700">
+            {error}
+          </p>
+        )}
 
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="rounded-xl border border-gray-200 bg-white p-5">
@@ -174,16 +174,12 @@ export default function DeliveriesPage() {
               <div className="space-y-3 text-sm">
                 <div>
                   <p className="text-gray-500">Product</p>
-                  <p className="font-medium text-gray-900">
-                    {delivery.items}
-                  </p>
+                  <p className="font-medium text-gray-900">{delivery.items}</p>
                 </div>
 
                 <div>
                   <p className="text-gray-500">Delivery date</p>
-                  <p className="font-medium text-gray-900">
-                    {delivery.date}
-                  </p>
+                  <p className="font-medium text-gray-900">{delivery.date}</p>
                 </div>
 
                 <div>
@@ -207,7 +203,10 @@ export default function DeliveriesPage() {
           ))}
 
           {loading && (
-            <div role="status" className="rounded-xl border border-gray-200 bg-white p-10 text-center text-gray-500 lg:col-span-2">
+            <div
+              role="status"
+              className="rounded-xl border border-gray-200 bg-white p-10 text-center text-gray-500 lg:col-span-2"
+            >
               Loading deliveries…
             </div>
           )}
@@ -278,9 +277,7 @@ export default function DeliveriesPage() {
               </div>
 
               <div className="mt-5 rounded-lg bg-gray-50 p-4">
-                <p className="font-semibold text-gray-800">
-                  Latest update
-                </p>
+                <p className="font-semibold text-gray-800">Latest update</p>
                 <p className="mt-1 text-sm text-gray-600">
                   {selectedDelivery.trackingNote}
                 </p>

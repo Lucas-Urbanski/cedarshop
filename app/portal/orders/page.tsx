@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useState } from "react";
@@ -49,7 +48,9 @@ export default function OrdersPage() {
 
   const [selectedOrder, setSelectedOrder] =
     useState<CustomerOrderRecord | null>(null);
-  const [editingOrder, setEditingOrder] = useState<CustomerOrderRecord | null>(null);
+  const [editingOrder, setEditingOrder] = useState<CustomerOrderRecord | null>(
+    null,
+  );
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -111,13 +112,13 @@ export default function OrdersPage() {
   async function cancelOrder(order: Order) {
     if (order.status !== "Pending") {
       setMessage(
-        "Only pending orders can be cancelled directly. Please contact the Cedar Shop team for assistance."
+        "Only pending orders can be cancelled directly. Please contact the Cedar Shop team for assistance.",
       );
       return;
     }
 
     const confirmed = window.confirm(
-      `Are you sure you want to cancel order ${displayOrderId(order.id)}?`
+      `Are you sure you want to cancel order ${displayOrderId(order.id)}?`,
     );
 
     if (!confirmed) return;
@@ -149,23 +150,18 @@ export default function OrdersPage() {
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-       
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              My Orders
-            </h1>
-            <p className="mt-2 text-gray-600">
-              View, manage, and track your lumber orders.
-            </p>
+            <h1 className="text-3xl font-bold text-gray-900">My Orders</h1>
           </div>
-
-          <Link
-            href="/portal/orders/new"
-            className="inline-flex items-center justify-center rounded-lg bg-green-700 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-800"
-          >
-            + New Order Request
-          </Link>
+          <div className="text-zinc-100">
+            <Link
+              href="/portal/orders/new"
+              className="inline-flex items-center justify-center rounded-lg bg-green-700 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-800"
+            >
+              + New Order Request
+            </Link>
+          </div>
         </div>
 
         {message && (
@@ -259,17 +255,15 @@ export default function OrdersPage() {
                     <td className="whitespace-nowrap px-4 py-4 text-gray-600">
                       {new Date(order.date).toLocaleDateString("en-CA")}
                     </td>
-                    <td className="px-4 py-4 text-gray-800">
-                      {order.items}
-                    </td>
+                    <td className="px-4 py-4 text-gray-800">{order.items}</td>
                     <td className="whitespace-nowrap px-4 py-4 text-gray-600">
                       {order.quantity} {order.unit}
                     </td>
                     <td className="whitespace-nowrap px-4 py-4 font-medium text-gray-900">
                       {order.total > 0
                         ? order.total.toLocaleString("en-CA", {
-                        style: "currency",
-                        currency: "CAD",
+                            style: "currency",
+                            currency: "CAD",
                           })
                         : "Awaiting quote"}
                     </td>
@@ -316,7 +310,10 @@ export default function OrdersPage() {
 
                 {loading && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-6 text-center text-gray-500">
+                    <td
+                      colSpan={7}
+                      className="px-4 py-6 text-center text-gray-500"
+                    >
                       Loading your orders…
                     </td>
                   </tr>
@@ -367,9 +364,15 @@ export default function OrdersPage() {
               </div>
 
               <div className="space-y-4 text-sm text-gray-600">
-                <p><strong>Order ID:</strong> {displayOrderId(selectedOrder.id)}</p>
-                <p><strong>Date:</strong> {selectedOrder.date}</p>
-                <p><strong>Product:</strong> {selectedOrder.items}</p>
+                <p>
+                  <strong>Order ID:</strong> {displayOrderId(selectedOrder.id)}
+                </p>
+                <p>
+                  <strong>Date:</strong> {selectedOrder.date}
+                </p>
+                <p>
+                  <strong>Product:</strong> {selectedOrder.items}
+                </p>
                 <p>
                   <strong>Quantity:</strong> {selectedOrder.quantity}{" "}
                   {selectedOrder.unit}
@@ -435,7 +438,7 @@ export default function OrdersPage() {
             >
               <div className="mb-5 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">
-                  Edit                   Order {displayOrderId(editingOrder.id)}
+                  Edit Order {displayOrderId(editingOrder.id)}
                 </h2>
                 <button
                   type="button"

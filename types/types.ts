@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import type { YardData } from "@/types/yard";
 
+export type Identified<T> = T & { id: string };
+
 export type UserRole =
   | "Customer"
   | "Driver"
@@ -54,6 +56,67 @@ export interface AuthPageShellProps {
   title: string;
   description: string;
   children: ReactNode;
+}
+
+export type WorkspaceIcon =
+  | "account"
+  | "alert"
+  | "dashboard"
+  | "mapPin"
+  | "inventory"
+  | "newOrder"
+  | "orders"
+  | "settings"
+  | "store"
+  | "mobile"
+  | "truck";
+
+export interface WorkspaceNavigationItem {
+  label: string;
+  href: string;
+  icon: WorkspaceIcon;
+}
+
+export interface WorkspaceShellProps extends ChildrenProps {
+  workspaceName: string;
+  navigation: readonly WorkspaceNavigationItem[];
+  className?: string;
+  contentClassName?: string;
+}
+
+export interface FirestoreCollectionState<T> {
+  items: T[];
+  loading: boolean;
+  error: string | null;
+}
+
+export type DriverStopStatus = "Ready" | "In Progress" | "Delivered";
+
+export interface DriverDeliveryItem {
+  name: string;
+  quantity: number;
+  unit: string;
+}
+
+export interface DriverDelivery {
+  id: string;
+  orderId: string;
+  customer: string;
+  phone: string;
+  address: string;
+  city: string;
+  scheduledTime: string;
+  status: DriverStopStatus;
+  items: DriverDeliveryItem[];
+  instructions?: string;
+}
+
+export type DriverStatusFilter = "All stops" | DriverStopStatus;
+
+export interface DeliveryStopCardProps {
+  delivery: DriverDelivery;
+  onAdvanceStatus: (deliveryId: string) => void;
+  disabled?: boolean;
 }
 
 export interface CustomerProfile {

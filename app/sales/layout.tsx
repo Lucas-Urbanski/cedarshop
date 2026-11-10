@@ -1,8 +1,19 @@
 import RouteGuard from "@/components/auth/routeGuard";
-import type { ChildrenProps } from "@/types/types";
+import WorkspaceShell from "@/components/workspace/WorkspaceShell";
+import type { ChildrenProps, WorkspaceNavigationItem } from "@/types/types";
 
 const salesRoles = ["SalesStaff", "Administrator"] as const;
+const navigation: readonly WorkspaceNavigationItem[] = [
+  { label: "Sales dashboard", href: "/sales", icon: "dashboard" },
+  { label: "Storefront", href: "/", icon: "store" },
+];
 
 export default function SalesLayout({ children }: ChildrenProps) {
-  return <RouteGuard allowedRoles={salesRoles}>{children}</RouteGuard>;
+  return (
+    <RouteGuard allowedRoles={salesRoles}>
+      <WorkspaceShell workspaceName="Sales" navigation={navigation}>
+        {children}
+      </WorkspaceShell>
+    </RouteGuard>
+  );
 }

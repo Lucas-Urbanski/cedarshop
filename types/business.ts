@@ -1,5 +1,4 @@
-import type { DriverDelivery } from "@/data/Delivery";
-import type { Order } from "@/types/types";
+import type { DriverDelivery, Order } from "@/types/types";
 import type { YardLoss, YardStock, YardWorkOrder } from "@/types/yard";
 
 export interface ProductRecord {

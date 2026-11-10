@@ -1,15 +1,8 @@
-
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import Navbar from "@/components/NavBar";
 import type { SalesProduct, SalesQuoteItem } from "@/types/types";
-import {
-  collection,
-  doc,
-  runTransaction,
-} from "firebase/firestore";
+import { collection, doc, runTransaction } from "firebase/firestore";
 
 import useFirestoreCollection from "@/hooks/useFirestoreCollection";
 import type { InventoryRecord, ProductRecord } from "@/types/business";
@@ -31,8 +24,11 @@ const primaryButton =
   "rounded-lg bg-[var(--accent-strong)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110";
 
 export default function SalesDashboard() {
-  const { items: productRecords, loading, error: productsError } =
-    useFirestoreCollection<ProductRecord>("products");
+  const {
+    items: productRecords,
+    loading,
+    error: productsError,
+  } = useFirestoreCollection<ProductRecord>("products");
   const {
     items: inventoryRecords,
     loading: inventoryLoading,
@@ -71,12 +67,12 @@ export default function SalesDashboard() {
 
   const totalUnits = products.reduce(
     (sum, product) => sum + product.quantity,
-    0
+    0,
   );
 
   const subtotal = quoteItems.reduce(
     (sum, item) => sum + item.product.price * item.quantity,
-    0
+    0,
   );
 
   const safeDiscount = Math.min(100, Math.max(0, discount || 0));
@@ -85,21 +81,16 @@ export default function SalesDashboard() {
 
   function addToQuote(product: SalesProduct) {
     setQuoteItems((current) => {
-      const existing = current.find(
-        (item) => item.product.id === product.id
-      );
+      const existing = current.find((item) => item.product.id === product.id);
 
       if (existing) {
         return current.map((item) =>
           item.product.id === product.id
             ? {
                 ...item,
-                quantity: Math.min(
-                  item.quantity + 1,
-                  item.product.quantity
-                ),
+                quantity: Math.min(item.quantity + 1, item.product.quantity),
               }
-            : item
+            : item,
         );
       }
 
@@ -119,17 +110,17 @@ export default function SalesDashboard() {
               ...item,
               quantity: Math.min(
                 item.product.quantity,
-                Math.max(1, Math.trunc(value))
+                Math.max(1, Math.trunc(value)),
               ),
             }
-          : item
-      )
+          : item,
+      ),
     );
   }
 
   function removeFromQuote(productId: string) {
     setQuoteItems((current) =>
-      current.filter((item) => item.product.id !== productId)
+      current.filter((item) => item.product.id !== productId),
     );
   }
 
@@ -202,27 +193,12 @@ export default function SalesDashboard() {
   }
 
   return (
-    <div className="appShell">
-      <Navbar user={null}>
-        <nav className="workspace-nav" aria-label="Sales navigation">
-          <Link href="/" className="workspace-nav-link">
-            Home
-          </Link>
-          <span className="workspace-nav-current" aria-current="page">
-            Sales Dashboard
-          </span>
-        </nav>
-      </Navbar>
-
-      <main className="mx-auto w-full max-w-7xl flex-1 space-y-7 px-4 py-8 text-[var(--text-primary)] sm:px-6 lg:px-8">
+      <main className="workspace-page flex-1 space-y-7 text-[var(--text-primary)]">
         <div>
           <p className="eyebrow">The Cedar Shop</p>
           <h1 className="text-3xl font-bold tracking-tight">
             Sales Staff Dashboard
           </h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)]">
-            Search lumber inventory and prepare customer quotes.
-          </p>
         </div>
 
         {(productsError || inventoryError) && (
@@ -245,44 +221,28 @@ export default function SalesDashboard() {
 
         <section className="grid gap-4 sm:grid-cols-3">
           <div className={cardClass}>
-            <p className="text-sm text-[var(--text-muted)]">
-              Lumber Products
-            </p>
-            <p className="mt-2 text-3xl font-bold">
-              {products.length}
-            </p>
+            <p className="text-sm text-[var(--text-muted)]">Lumber Products</p>
+            <p className="mt-2 text-3xl font-bold">{products.length}</p>
           </div>
 
           <div className={cardClass}>
-            <p className="text-sm text-[var(--text-muted)]">
-              Available Units
-            </p>
+            <p className="text-sm text-[var(--text-muted)]">Available Units</p>
             <p className="mt-2 text-3xl font-bold">
               {totalUnits.toLocaleString()}
             </p>
           </div>
 
           <div className={cardClass}>
-            <p className="text-sm text-[var(--text-muted)]">
-              Items in Quote
-            </p>
+            <p className="text-sm text-[var(--text-muted)]">Items in Quote</p>
             <p className="mt-2 text-3xl font-bold">
-              {quoteItems.reduce(
-                (sum, item) => sum + item.quantity,
-                0
-              )}
+              {quoteItems.reduce((sum, item) => sum + item.quantity, 0)}
             </p>
           </div>
         </section>
 
         <section className={cardClass}>
           <div className="mb-5">
-            <h2 className="text-xl font-bold">
-              Lumber Inventory
-            </h2>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              Find products by name or SKU and add them to a quote.
-            </p>
+            <h2 className="text-xl font-bold">Lumber Inventory</h2>
           </div>
 
           <label
@@ -318,16 +278,10 @@ export default function SalesDashboard() {
                     key={product.id}
                     className="border-t border-[var(--border)]"
                   >
-                    <td className="p-3 font-medium">
-                      {product.sku}
-                    </td>
+                    <td className="p-3 font-medium">{product.sku}</td>
                     <td className="p-3">{product.name}</td>
-                    <td className="p-3">
-                      {money(product.price)}
-                    </td>
-                    <td className="p-3">
-                      {product.quantity.toLocaleString()}
-                    </td>
+                    <td className="p-3">{money(product.price)}</td>
+                    <td className="p-3">{product.quantity.toLocaleString()}</td>
                     <td className="p-3">
                       <button
                         type="button"
@@ -344,13 +298,18 @@ export default function SalesDashboard() {
             </table>
 
             {(loading || inventoryLoading) && (
-              <p role="status" className="py-4 text-sm text-[var(--text-muted)]">
+              <p
+                role="status"
+                className="py-4 text-sm text-[var(--text-muted)]"
+              >
                 Loading inventory…
               </p>
             )}
             {filteredProducts.length === 0 && (
               <p className="py-8 text-center text-sm text-[var(--text-muted)]">
-                {loading || inventoryLoading ? " " : "No matching products found."}
+                {loading || inventoryLoading
+                  ? " "
+                  : "No matching products found."}
               </p>
             )}
           </div>
@@ -359,9 +318,7 @@ export default function SalesDashboard() {
         <section className={cardClass}>
           <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="text-xl font-bold">
-                Customer Quote Builder
-              </h2>
+              <h2 className="text-xl font-bold">Customer Quote Builder</h2>
               <p className="mt-1 text-sm text-[var(--text-secondary)]">
                 Add products, adjust quantities, and calculate a quote.
               </p>
@@ -391,9 +348,7 @@ export default function SalesDashboard() {
               id="customer-name"
               value={customerName}
               required
-              onChange={(event) =>
-                setCustomerName(event.target.value)
-              }
+              onChange={(event) => setCustomerName(event.target.value)}
               placeholder="Enter customer name"
               className={inputClass}
             />
@@ -423,16 +378,12 @@ export default function SalesDashboard() {
                       className="border-t border-[var(--border)]"
                     >
                       <td className="p-3">
-                        <p className="font-medium">
-                          {item.product.name}
-                        </p>
+                        <p className="font-medium">{item.product.name}</p>
                         <p className="text-xs text-[var(--text-muted)]">
                           {item.product.sku}
                         </p>
                       </td>
-                      <td className="p-3">
-                        {money(item.product.price)}
-                      </td>
+                      <td className="p-3">{money(item.product.price)}</td>
                       <td className="p-3">
                         <input
                           type="number"
@@ -443,7 +394,7 @@ export default function SalesDashboard() {
                           onChange={(event) =>
                             updateQuantity(
                               item.product.id,
-                              Number(event.target.value)
+                              Number(event.target.value),
                             )
                           }
                           aria-label={`Quantity for ${item.product.name}`}
@@ -451,16 +402,12 @@ export default function SalesDashboard() {
                         />
                       </td>
                       <td className="p-3 font-semibold">
-                        {money(
-                          item.product.price * item.quantity
-                        )}
+                        {money(item.product.price * item.quantity)}
                       </td>
                       <td className="p-3">
                         <button
                           type="button"
-                          onClick={() =>
-                            removeFromQuote(item.product.id)
-                          }
+                          onClick={() => removeFromQuote(item.product.id)}
                           className="rounded-lg border border-[var(--border-hover)] px-3 py-2 text-sm hover:bg-[var(--surface-raised)]"
                         >
                           Remove
@@ -490,10 +437,7 @@ export default function SalesDashboard() {
                 value={discount}
                 onChange={(event) =>
                   setDiscount(
-                    Math.min(
-                      100,
-                      Math.max(0, Number(event.target.value) || 0)
-                    )
+                    Math.min(100, Math.max(0, Number(event.target.value) || 0)),
                   )
                 }
                 className={inputClass}
@@ -502,9 +446,7 @@ export default function SalesDashboard() {
 
             <div className="w-full max-w-sm space-y-3 text-sm">
               <div className="flex justify-between gap-4">
-                <span className="text-[var(--text-secondary)]">
-                  Subtotal
-                </span>
+                <span className="text-[var(--text-secondary)]">Subtotal</span>
                 <span>{money(subtotal)}</span>
               </div>
               <div className="flex justify-between gap-4">
@@ -515,9 +457,7 @@ export default function SalesDashboard() {
               </div>
               <div className="flex justify-between gap-4 border-t border-[var(--border)] pt-3 text-lg font-bold">
                 <span>Quote Total</span>
-                <span className="text-[var(--accent)]">
-                  {money(total)}
-                </span>
+                <span className="text-[var(--accent)]">{money(total)}</span>
               </div>
             </div>
           </div>
@@ -527,9 +467,7 @@ export default function SalesDashboard() {
               type="button"
               onClick={saveQuote}
               disabled={
-                savingQuote ||
-                !quoteItems.length ||
-                !customerName.trim()
+                savingQuote || !quoteItems.length || !customerName.trim()
               }
               className={`${primaryButton} disabled:cursor-not-allowed disabled:opacity-50`}
             >
@@ -537,12 +475,6 @@ export default function SalesDashboard() {
             </button>
           </div>
         </section>
-
-        <p className="pb-4 text-xs text-[var(--text-muted)]">
-          Quotes and current inventory prices are stored in Firestore.
-          Totals exclude taxes and delivery.
-        </p>
       </main>
-    </div>
   );
 }

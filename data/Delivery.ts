@@ -1,23 +1,4 @@
-export type DriverStopStatus = "Ready" | "In Progress" | "Delivered";
-
-export interface DriverDeliveryItem {
-  name: string;
-  quantity: number;
-  unit: string;
-}
-
-export interface DriverDelivery {
-  id: string;
-  orderId: string;
-  customer: string;
-  phone: string;
-  address: string;
-  city: string;
-  scheduledTime: string;
-  status: DriverStopStatus;
-  items: DriverDeliveryItem[];
-  instructions?: string;
-}
+import type { DriverDelivery } from "@/types/types";
 
 export const initialDriverDeliveries: DriverDelivery[] = [
   {

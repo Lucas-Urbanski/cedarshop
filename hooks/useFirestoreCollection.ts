@@ -10,21 +10,16 @@ import {
 } from "firebase/firestore";
 
 import { db } from "@/utils/firebase";
+import type { FirestoreCollectionState, Identified } from "@/types/types";
 
 const noConstraints: readonly QueryConstraint[] = [];
-
-export interface FirestoreCollectionState<T> {
-  items: T[];
-  loading: boolean;
-  error: string | null;
-}
 
 export default function useFirestoreCollection<T extends DocumentData>(
   collectionName: string,
   constraints: readonly QueryConstraint[] = noConstraints,
   enabled = true,
-): FirestoreCollectionState<T & { id: string }> {
-  const [items, setItems] = useState<(T & { id: string })[]>([]);
+): FirestoreCollectionState<Identified<T>> {
+  const [items, setItems] = useState<Identified<T>[]>([]);
   const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
   const queryRef = useMemo(
@@ -49,9 +44,7 @@ export default function useFirestoreCollection<T extends DocumentData>(
         setItems(
           snapshot.docs.map(
             (document) =>
-              ({ id: document.id, ...document.data() }) as T & {
-                id: string;
-              },
+              ({ id: document.id, ...document.data() }) as Identified<T>,
           ),
         );
         setLoading(false);

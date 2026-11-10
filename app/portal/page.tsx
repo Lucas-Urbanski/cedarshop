@@ -27,8 +27,11 @@ export default function CustomerDashboard() {
     () => (userId ? [where("customerUid", "==", userId)] : []),
     [userId],
   );
-  const { items: orders, loading, error } =
-    useFirestoreCollection<CustomerOrderRecord>("orders", filters, !!userId);
+  const {
+    items: orders,
+    loading,
+    error,
+  } = useFirestoreCollection<CustomerOrderRecord>("orders", filters, !!userId);
   const recentOrders = useMemo(
     () =>
       [...orders]
@@ -46,10 +49,6 @@ export default function CustomerDashboard() {
           <h1 className="mt-2 text-3xl font-bold text-gray-900">
             Welcome back, {displayName}
           </h1>
-          <p className="mt-2 text-gray-600">
-            View your orders, track deliveries, and review lumber
-            weight specifications.
-          </p>
         </section>
 
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -60,21 +59,35 @@ export default function CustomerDashboard() {
           />
           <SummaryCard
             title="In Progress"
-            value={loading
-              ? "…"
-              : String(orders.filter((order) => order.status === "In Progress").length)}
+            value={
+              loading
+                ? "…"
+                : String(
+                    orders.filter((order) => order.status === "In Progress")
+                      .length,
+                  )
+            }
             description="Orders being processed"
           />
           <SummaryCard
             title="Delivered"
-            value={loading
-              ? "…"
-              : String(orders.filter((order) => order.status === "Delivered").length)}
+            value={
+              loading
+                ? "…"
+                : String(
+                    orders.filter((order) => order.status === "Delivered")
+                      .length,
+                  )
+            }
             description="Successfully delivered"
           />
         </section>
 
-        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+        {error && (
+          <p role="alert" className="text-sm text-red-700">
+            {error}
+          </p>
+        )}
 
         <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
           <div className="flex items-center justify-between border-b border-gray-200 p-5">
@@ -139,14 +152,20 @@ export default function CustomerDashboard() {
                 ))}
                 {loading && (
                   <tr>
-                    <td colSpan={5} className="px-5 py-8 text-center text-gray-500">
+                    <td
+                      colSpan={5}
+                      className="px-5 py-8 text-center text-gray-500"
+                    >
                       Loading your orders…
                     </td>
                   </tr>
                 )}
                 {!loading && recentOrders.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-5 py-8 text-center text-gray-500">
+                    <td
+                      colSpan={5}
+                      className="px-5 py-8 text-center text-gray-500"
+                    >
                       You haven’t submitted any orders yet.
                     </td>
                   </tr>
