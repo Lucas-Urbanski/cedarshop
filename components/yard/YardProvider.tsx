@@ -35,7 +35,8 @@ const emptyYardData: YardData = {
 };
 
 function withoutId<T extends { id: string }>(record: T): DocumentData {
-  const { id, ...data } = record;
+  const data: DocumentData = { ...record };
+  delete data.id;
   return data;
 }
 

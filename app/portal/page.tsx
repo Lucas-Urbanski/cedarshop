@@ -9,6 +9,7 @@ import useAuthDisplayName from "@/hooks/useAuthDisplayName";
 import type { CustomerOrderRecord } from "@/types/business";
 import type { SummaryCardProps } from "@/types/types";
 import { auth } from "@/utils/firebase";
+import { formatCalendarDate } from "@/utils/dates";
 
 const statusStyles: Record<string, string> = {
   Pending: "bg-amber-100 text-amber-800",
@@ -124,7 +125,7 @@ export default function CustomerDashboard() {
                       {displayOrderId(order.id)}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 text-gray-600">
-                      {new Date(order.date).toLocaleDateString("en-CA")}
+                      {formatCalendarDate(order.date)}
                     </td>
                     <td className="px-5 py-4 text-gray-600">{order.items}</td>
                     <td className="whitespace-nowrap px-5 py-4 text-gray-900">

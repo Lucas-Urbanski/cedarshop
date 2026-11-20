@@ -25,7 +25,7 @@ export default function OfflinePage() {
     >
       <small style={{ letterSpacing: "0.15em" }}>THE CEDAR SHOP · YARD</small>
       <h1 style={{ margin: "0.67em 0", fontSize: 38, lineHeight: 1.1 }}>
-        You're offline.
+        You&apos;re offline.
       </h1>
 
       <p style={{ margin: "1em 0", color: "#536358", lineHeight: 1.7 }}>

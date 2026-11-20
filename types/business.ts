@@ -7,7 +7,7 @@ export interface ProductRecord {
   price: number;
 }
 
-export interface InventoryRecord extends YardStock {}
+export type InventoryRecord = YardStock;
 
 export interface ProductCostRecord {
   cost: number;

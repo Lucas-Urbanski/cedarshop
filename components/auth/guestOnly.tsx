@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import type { ChildrenProps } from "@/types/types";
@@ -68,7 +69,7 @@ export function GuestOnly({ children }: ChildrenProps) {
     return (
       <main className="loadingState" role="alert">
         <p>{error}</p>
-        <a href="/">Return home</a>
+        <Link href="/">Return home</Link>
       </main>
     );
   }

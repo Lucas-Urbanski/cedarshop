@@ -5,10 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
-import type {
-  WorkspaceIcon,
-  WorkspaceShellProps,
-} from "@/types/types";
+import type { WorkspaceIcon, WorkspaceShellProps } from "@/types/types";
 import {
   AlertTriangle,
   ChevronRight,

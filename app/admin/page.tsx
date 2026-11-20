@@ -396,7 +396,9 @@ export default function AdminDashboard() {
                       ) : (
                         <span
                           className={
-                            product.quantity < 50
+                            product.quantity <
+                            (inventoryBySku.get(product.id)?.minimum ??
+                              Number.POSITIVE_INFINITY)
                               ? "font-semibold text-amber-500"
                               : "font-semibold text-[var(--accent)]"
                           }
@@ -413,7 +415,8 @@ export default function AdminDashboard() {
                             onClick={() =>
                               saveQuantity(product.id)
                             }
-                            className={primaryButton}
+                            disabled={saving}
+                            className={`${primaryButton} disabled:opacity-50`}
                           >
                             Save
                           </button>
@@ -507,7 +510,8 @@ export default function AdminDashboard() {
                         onClick={() =>
                           updateReport(report.id, "Approved")
                         }
-                        className={primaryButton}
+                        disabled={saving}
+                        className={`${primaryButton} disabled:opacity-50`}
                       >
                         Approve
                       </button>
@@ -516,7 +520,8 @@ export default function AdminDashboard() {
                         onClick={() =>
                           updateReport(report.id, "Rejected")
                         }
-                        className="rounded-lg bg-red-800 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                        disabled={saving}
+                        className="rounded-lg bg-red-800 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
                       >
                         Reject
                       </button>

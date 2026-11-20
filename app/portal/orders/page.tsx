@@ -8,6 +8,7 @@ import { doc, runTransaction, where } from "firebase/firestore";
 import useFirestoreCollection from "@/hooks/useFirestoreCollection";
 import type { CustomerOrderRecord } from "@/types/business";
 import { auth, db } from "@/utils/firebase";
+import { formatCalendarDate } from "@/utils/dates";
 
 function getStatusStyle(status: OrderStatus) {
   switch (status) {
@@ -253,7 +254,7 @@ export default function OrdersPage() {
                       {displayOrderId(order.id)}
                     </td>
                     <td className="whitespace-nowrap px-4 py-4 text-gray-600">
-                      {new Date(order.date).toLocaleDateString("en-CA")}
+                      {formatCalendarDate(order.date)}
                     </td>
                     <td className="px-4 py-4 text-gray-800">{order.items}</td>
                     <td className="whitespace-nowrap px-4 py-4 text-gray-600">

@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { CheckCircle2, Package, Route, Search, Truck } from "lucide-react";
 import DeliveryStopCard from "@/components/driver/DeliveryStopCard";
 import { doc, runTransaction, where } from "firebase/firestore";
 
 import useFirestoreCollection from "@/hooks/useFirestoreCollection";
 import useAuthDisplayName from "@/hooks/useAuthDisplayName";
+import useLocalToday from "@/hooks/useLocalToday";
 import type { DeliveryRecord } from "@/types/business";
 import type { DriverStatusFilter, DriverStopStatus } from "@/types/types";
 import { auth, db } from "@/utils/firebase";
@@ -24,25 +25,19 @@ export default function DriverDashboardPage() {
     useState<DriverStatusFilter>("All stops");
   const [actionError, setActionError] = useState("");
   const [updatingStop, setUpdatingStop] = useState<string | null>(null);
-  const [today, setToday] = useState("");
-  const [todayLabel, setTodayLabel] = useState("");
+  const today = useLocalToday();
+  const todayLabel = today
+    ? new Date(`${today}T12:00:00`)
+        .toLocaleDateString("en-CA", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        })
+        .toUpperCase()
+    : "";
   const driverName = useAuthDisplayName("Driver");
   const userId = auth.currentUser?.uid ?? "";
-
-  useEffect(() => {
-    const now = new Date();
-    const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
-      .toISOString()
-      .slice(0, 10);
-    const dateLabel = now.toLocaleDateString("en-CA", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-    setToday(localDate);
-    setTodayLabel(dateLabel.toUpperCase());
-  }, []);
 
   const assignedFilters = useMemo(
     () => [
@@ -198,7 +193,7 @@ export default function DriverDashboardPage() {
         <div className="driver-route-heading">
           <div>
             <p className="driver-eyebrow">YOUR DELIVERY PLAN</p>
-            <h2 id="route-title">Today's route</h2>
+            <h2 id="route-title">Today&apos;s route</h2>
           </div>
           <span className="driver-route-count">
             {route.length} stops <span aria-hidden="true">·</span> Calgary

@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { addDoc, collection } from "firebase/firestore";
 
 import useFirestoreCollection from "@/hooks/useFirestoreCollection";
+import useLocalToday from "@/hooks/useLocalToday";
 import type { ProductRecord } from "@/types/business";
 import { auth, db } from "@/utils/firebase";
 
-export default function NewOrderPage() {
+function NewOrderForm() {
   const {
     items: products,
     loading: productsLoading,
@@ -27,12 +29,17 @@ export default function NewOrderPage() {
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    const sku = new URLSearchParams(window.location.search).get("product");
-    if (sku && products.some((product) => product.id === sku)) {
-      setForm((current) => ({ ...current, productType: sku }));
-    }
-  }, [products]);
+  const searchParams = useSearchParams();
+  const requestedSku = searchParams.get("product") ?? "";
+  const requestedProductType = products.some(
+    (product) => product.id === requestedSku,
+  )
+    ? requestedSku
+    : "";
+  // The storefront links here with ?product=<sku>. Deriving the selected
+  // product keeps the form usable before the catalogue finishes loading.
+  const productType = form.productType || requestedProductType;
+  const today = useLocalToday();
 
   function handleChange(
     event: React.ChangeEvent<
@@ -55,7 +62,7 @@ export default function NewOrderPage() {
     const user = auth.currentUser;
     const quantity = Number(form.quantity);
     const selectedProduct = products.find(
-      (product) => product.id === form.productType,
+      (product) => product.id === productType,
     );
     if (
       !user ||
@@ -79,9 +86,9 @@ export default function NewOrderPage() {
       await addDoc(collection(db, "orders"), {
         customerUid: user.uid,
         date,
-        productType: selectedProduct?.name ?? form.productType,
+        productType: selectedProduct?.name ?? productType,
         dimensions: form.dimensions.trim(),
-        items: `${selectedProduct?.name ?? form.productType} — ${form.dimensions.trim()}`,
+        items: `${selectedProduct?.name ?? productType} — ${form.dimensions.trim()}`,
         quantity,
         unit: form.unit,
         deliveryDate: form.deliveryDate,
@@ -169,7 +176,7 @@ export default function NewOrderPage() {
               <select
                 id="productType"
                 name="productType"
-                value={form.productType}
+                value={productType}
                 onChange={handleChange}
                 required
                 className={inputClass}
@@ -272,11 +279,7 @@ export default function NewOrderPage() {
                 id="deliveryDate"
                 name="deliveryDate"
                 type="date"
-                min={new Date(
-                  Date.now() - new Date().getTimezoneOffset() * 60_000,
-                )
-                  .toISOString()
-                  .slice(0, 10)}
+                min={today || undefined}
                 value={form.deliveryDate}
                 onChange={handleChange}
                 required
@@ -340,5 +343,21 @@ export default function NewOrderPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function NewOrderPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
+          <p role="status" className="mx-auto max-w-3xl text-sm text-gray-600">
+            Loading the order form…
+          </p>
+        </div>
+      }
+    >
+      <NewOrderForm />
+    </Suspense>
   );
 }

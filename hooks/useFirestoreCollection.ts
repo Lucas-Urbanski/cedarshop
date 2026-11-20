@@ -6,6 +6,7 @@ import {
   onSnapshot,
   query,
   type DocumentData,
+  type Query,
   type QueryConstraint,
 } from "firebase/firestore";
 
@@ -19,43 +20,50 @@ export default function useFirestoreCollection<T extends DocumentData>(
   constraints: readonly QueryConstraint[] = noConstraints,
   enabled = true,
 ): FirestoreCollectionState<Identified<T>> {
-  const [items, setItems] = useState<Identified<T>[]>([]);
-  const [loading, setLoading] = useState(enabled);
-  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<{
+    query: Query;
+    items: Identified<T>[];
+  } | null>(null);
+  const [failure, setFailure] = useState<{
+    query: Query;
+    message: string;
+  } | null>(null);
   const queryRef = useMemo(
     () => query(collection(db, collectionName), ...constraints),
     [collectionName, constraints],
   );
 
   useEffect(() => {
-    if (!enabled) {
-      setItems([]);
-      setLoading(false);
-      setError(null);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
+    if (!enabled) return;
 
     return onSnapshot(
       queryRef,
       (snapshot) => {
-        setItems(
-          snapshot.docs.map(
+        setResult({
+          query: queryRef,
+          items: snapshot.docs.map(
             (document) =>
               ({ id: document.id, ...document.data() }) as Identified<T>,
           ),
-        );
-        setLoading(false);
+        });
+        setFailure(null);
       },
       (caughtError) => {
         console.error(`Could not load ${collectionName}.`, caughtError);
-        setError(`Could not load ${collectionName}. Please try again.`);
-        setLoading(false);
+        setFailure({
+          query: queryRef,
+          message: `Could not load ${collectionName}. Please try again.`,
+        });
       },
     );
   }, [collectionName, enabled, queryRef]);
+
+  // Results and errors are tagged with the query they belong to, so a filter
+  // change never shows the previous query's rows.
+  const items =
+    enabled && result?.query === queryRef ? result.items : [];
+  const error = failure?.query === queryRef ? failure.message : null;
+  const loading = enabled && result?.query !== queryRef && error === null;
 
   return { items, loading, error };
 }
