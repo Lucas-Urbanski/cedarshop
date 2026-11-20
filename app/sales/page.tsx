@@ -7,6 +7,11 @@ import { collection, doc, runTransaction } from "firebase/firestore";
 import useFirestoreCollection from "@/hooks/useFirestoreCollection";
 import type { InventoryRecord, ProductRecord } from "@/types/business";
 import { auth, db } from "@/utils/firebase";
+import {
+  GST_LABEL,
+  calculateQuoteTotals,
+  taxPercentLabel,
+} from "@/utils/tax";
 
 const money = (amount: number) =>
   amount.toLocaleString("en-CA", {
@@ -70,14 +75,20 @@ export default function SalesDashboard() {
     0,
   );
 
-  const subtotal = quoteItems.reduce(
-    (sum, item) => sum + item.product.price * item.quantity,
-    0,
-  );
-
   const safeDiscount = Math.min(100, Math.max(0, discount || 0));
-  const discountAmount = subtotal * (safeDiscount / 100);
-  const total = subtotal - discountAmount;
+  // GST is calculated per line on the discounted amount, so the line items
+  // shown to the customer add up to the tax and total.
+  const totals = useMemo(
+    () =>
+      calculateQuoteTotals(
+        quoteItems.map((item) => ({
+          unitPrice: item.product.price,
+          quantity: item.quantity,
+        })),
+        safeDiscount,
+      ),
+    [quoteItems, safeDiscount],
+  );
 
   function addToQuote(product: SalesProduct) {
     setQuoteItems((current) => {
@@ -164,15 +175,21 @@ export default function SalesDashboard() {
           customerName: customerName.trim(),
           createdBy: user.uid,
           createdAt: new Date().toISOString(),
-          items: quoteItems.map(({ product, quantity }) => ({
+          items: quoteItems.map(({ product, quantity }, index) => ({
             sku: product.sku,
             name: product.name,
             unitPrice: product.price,
             quantity,
+            lineTotal: totals.lines[index]?.net ?? 0,
+            tax: totals.lines[index]?.tax ?? 0,
           })),
-          subtotal,
+          subtotal: totals.subtotal,
           discountPercent: safeDiscount,
-          total,
+          discountAmount: totals.discountAmount,
+          taxableSubtotal: totals.taxable,
+          taxRate: totals.taxRate,
+          tax: totals.tax,
+          total: totals.total,
         });
       });
 
@@ -364,12 +381,15 @@ export default function SalesDashboard() {
                     <th className="p-3">Unit Price</th>
                     <th className="p-3">Quantity</th>
                     <th className="p-3">Line Total</th>
+                    <th className="p-3">
+                      {GST_LABEL} {taxPercentLabel()}
+                    </th>
                     <th className="p-3">Action</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {quoteItems.map((item) => (
+                  {quoteItems.map((item, index) => (
                     <tr
                       key={item.product.id}
                       className="border-t border-[var(--border)]"
@@ -399,7 +419,10 @@ export default function SalesDashboard() {
                         />
                       </td>
                       <td className="p-3 font-semibold">
-                        {money(item.product.price * item.quantity)}
+                        {money(totals.lines[index]?.net ?? 0)}
+                      </td>
+                      <td className="p-3 text-[var(--text-secondary)]">
+                        {money(totals.lines[index]?.tax ?? 0)}
                       </td>
                       <td className="p-3">
                         <button
@@ -444,18 +467,34 @@ export default function SalesDashboard() {
             <div className="w-full max-w-sm space-y-3 text-sm">
               <div className="flex justify-between gap-4">
                 <span className="text-[var(--text-secondary)]">Subtotal</span>
-                <span>{money(subtotal)}</span>
+                <span>{money(totals.subtotal)}</span>
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-[var(--text-secondary)]">
                   Discount ({safeDiscount}%)
                 </span>
-                <span>-{money(discountAmount)}</span>
+                <span>-{money(totals.discountAmount)}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-[var(--text-secondary)]">
+                  Taxable amount
+                </span>
+                <span>{money(totals.taxable)}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-[var(--text-secondary)]">
+                  {GST_LABEL} ({taxPercentLabel(totals.taxRate)})
+                </span>
+                <span>{money(totals.tax)}</span>
               </div>
               <div className="flex justify-between gap-4 border-t border-[var(--border)] pt-3 text-lg font-bold">
                 <span>Quote Total</span>
-                <span className="text-[var(--accent)]">{money(total)}</span>
+                <span className="text-[var(--accent)]">{money(totals.total)}</span>
               </div>
+              <p className="text-xs text-[var(--text-muted)]">
+                {GST_LABEL} is calculated on each discounted line and included
+                in the quote total.
+              </p>
             </div>
           </div>
 

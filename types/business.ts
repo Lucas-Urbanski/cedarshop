@@ -42,19 +42,30 @@ export interface YardLossRecord extends YardLoss {
   createdBy: string;
 }
 
+export interface SalesQuoteItemRecord {
+  sku: string;
+  name: string;
+  unitPrice: number;
+  quantity: number;
+  /** Line total after the quote discount. */
+  lineTotal?: number;
+  /** GST charged on this line. */
+  tax?: number;
+}
+
 export interface SalesQuoteRecord {
   id: string;
   customerName: string;
   createdBy: string;
   createdAt: string;
-  items: {
-    sku: string;
-    name: string;
-    unitPrice: number;
-    quantity: number;
-  }[];
+  items: SalesQuoteItemRecord[];
   subtotal: number;
   discountPercent: number;
+  discountAmount?: number;
+  /** Subtotal after discount; the amount GST is charged on. */
+  taxableSubtotal?: number;
+  taxRate?: number;
+  tax?: number;
   total: number;
 }
 
