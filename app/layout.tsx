@@ -18,6 +18,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "The Cedar Shop",
   description: "Cedar Shop Lumber Management System",
+  icons: {
+    apple: "/cedarshop-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Cedar Shop",
+    statusBarStyle: "default",
+  },
 };
 
 export default function RootLayout({

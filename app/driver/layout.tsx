@@ -13,7 +13,7 @@ const driverRoles = ["Driver", "Administrator"] as const;
 const navigation: readonly WorkspaceNavigationItem[] = [
   {
     href: "/driver/dashboard",
-    label: "Delivery board",
+    label: "Delivery",
     icon: "dashboard",
   },
   {
@@ -33,15 +33,7 @@ export default function DriverLayout({ children }: ChildrenProps) {
         contentClassName="driver-workspace-main"
       >
         <main id="driver-main" className="driver-main">
-          <div className="driver-prototype-note">
-            <span aria-hidden="true" />
-            Driver workspace
-            <span>Live delivery updates</span>
-          </div>
           {children}
-          <footer className="driver-footer">
-            THE CEDAR SHOP <span>Driver workspace · Live operations</span>
-          </footer>
         </main>
       </WorkspaceShell>
     </RouteGuard>

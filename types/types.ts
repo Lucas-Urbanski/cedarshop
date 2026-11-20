@@ -172,7 +172,6 @@ export interface SummaryCardProps {
 export interface YardHeadingProps {
   eyebrow: string;
   title: string;
-  description: string;
   children?: ReactNode;
 }
 
@@ -197,12 +196,12 @@ export interface YardContextValue {
   ) => Promise<boolean>;
 }
 
-export interface YardInstallPrompt extends Event {
+export interface InstallPrompt extends Event {
   prompt: () => Promise<void>;
-  userChoice: Promise<YardInstallPromptOutcome>;
+  userChoice: Promise<InstallPromptOutcome>;
 }
 
-export interface YardInstallPromptOutcome {
+export interface InstallPromptOutcome {
   outcome: "accepted" | "dismissed";
 }
 

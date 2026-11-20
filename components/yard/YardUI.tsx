@@ -12,7 +12,6 @@ import type {
 export function YardHeading({
   eyebrow,
   title,
-  description,
   children,
 }: YardHeadingProps) {
   return (
@@ -20,7 +19,6 @@ export function YardHeading({
       <div>
         <p className="yard-eyebrow">{eyebrow}</p>
         <h1>{title}</h1>
-        <p>{description}</p>
       </div>
 
       <div className="yard-heading-actions">{children}</div>

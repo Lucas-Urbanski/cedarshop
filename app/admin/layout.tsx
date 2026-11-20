@@ -5,6 +5,7 @@ import type { ChildrenProps, WorkspaceNavigationItem } from "@/types/types";
 const adminRoles = ["Administrator"] as const;
 const navigation: readonly WorkspaceNavigationItem[] = [
   { label: "Admin dashboard", href: "/admin", icon: "dashboard" },
+  { label: "Downloads", href: "/admin/download", icon: "settings" },
   { label: "Sales workspace", href: "/sales", icon: "orders" },
   { label: "Yard workspace", href: "/yard", icon: "store" },
   { label: "Driver workspace", href: "/driver/dashboard", icon: "truck" },

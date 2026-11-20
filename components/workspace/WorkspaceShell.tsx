@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import type {
   WorkspaceIcon,
-  WorkspaceNavigationItem,
   WorkspaceShellProps,
 } from "@/types/types";
 import {

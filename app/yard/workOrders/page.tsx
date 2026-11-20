@@ -107,7 +107,6 @@ export default function WorkOrdersPage() {
       <YardHeading
         eyebrow="IN THE WORKSHOP"
         title="Work orders"
-        description="Track custom millwork from the first measurement to the final cut."
       >
         <button
           className="yard-button"

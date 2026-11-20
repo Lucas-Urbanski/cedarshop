@@ -176,7 +176,6 @@ export default function LossesPage() {
       <YardHeading
         eyebrow="DAMAGE & LOSS TAGGING"
         title="Loss reports"
-        description="Document damaged lumber so the team can review it."
       >
         <button className="yard-button" onClick={openReportForm}>
           <Plus size={18} />

@@ -6,7 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  ScanLine,
   Search,
   ShieldAlert,
   ShoppingCart,
@@ -40,12 +39,6 @@ const workflowNavigation: WorkflowNavigationItem[] = [
     href: "/sales",
     role: "SalesStaff",
     icon: <Trees aria-hidden="true" />,
-  },
-  {
-    label: "Yard & Mobile PWA",
-    href: "/yard",
-    role: "FloorStaff",
-    icon: <ScanLine aria-hidden="true" />,
   },
   {
     label: "Driver Delivery App",

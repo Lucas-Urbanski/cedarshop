@@ -1,228 +1,307 @@
 "use client";
 
-import Link from "next/link";
-import {
-  ArrowRight,
-  Package,
-  ClipboardList,
-  TriangleAlert,
-  MapPin,
-  Smartphone,
-  Trees,
-  ArrowUpRight,
-} from "lucide-react";
+import { useState, type FormEvent } from "react";
+import { Search, SlidersHorizontal, Package, MapPin } from "lucide-react";
 
 import { useYard } from "@/components/yard/YardProvider";
 import {
   YardHeading,
   YardBadge,
-  shortDate,
+  YardDialog,
+  EmptyState,
 } from "@/components/yard/YardUI";
 
-export default function YardOverview() {
-  const { data } = useYard();
+import type { YardStock, YardLocation } from "@/types/yard";
 
-  const lowStock = data.inventory.filter(
-    (item) => item.quantity < item.minimum,
-  );
+export default function InventoryPage() {
+  const { data, update } = useYard();
 
-  const activeOrders = data.orders.filter(
-    (order) => order.status !== "Completed",
-  );
+  const [search, setSearch] = useState("");
+  const [location, setLocation] = useState("All locations");
+  const [lowOnly, setLowOnly] = useState(false);
+  const [editing, setEditing] = useState<YardStock | null>(null);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const metrics = [
-    {
-      label: "Pieces on hand",
-      value: data.inventory.reduce((sum, item) => sum + item.quantity, 0),
-      note: `${data.inventory.length} stock lines across 3 areas`,
-      icon: Package,
-    },
-    {
-      label: "Open work orders",
-      value: activeOrders.length,
-      note: `${
-        activeOrders.filter((order) => order.status === "In progress").length
-      } currently in progress`,
-      icon: ClipboardList,
-    },
-    {
-      label: "Low-stock items",
-      value: lowStock.length,
-      note: "Below minimum stock level",
-      icon: TriangleAlert,
-    },
-    {
-      label: "Loss reports",
-      value: data.losses.length,
-      note: "Awaiting review",
-      icon: MapPin,
-    },
-  ];
+  const items = data.inventory.filter((item) => {
+    const matchesSearch = `${item.name} ${item.id} ${item.bay}`
+      .toLowerCase()
+      .includes(search.toLowerCase());
+
+    const matchesLocation =
+      location === "All locations" || item.location === location;
+
+    const matchesStock = !lowOnly || item.quantity < item.minimum;
+
+    return matchesSearch && matchesLocation && matchesStock;
+  });
+
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!editing) return;
+
+    const form = new FormData(event.currentTarget);
+    const quantity = Number(form.get("quantity"));
+    const bay = String(form.get("bay")).trim();
+    const reason = String(form.get("reason")).trim();
+    const nextLocation = String(form.get("location")) as YardLocation;
+
+    if (!Number.isSafeInteger(quantity) || quantity < 0 || !bay || !reason) {
+      setError("Enter a valid whole-piece count, bay and reason.");
+      return;
+    }
+
+    setSaving(true);
+    const saved = await update(
+      (current) => ({
+        ...current,
+        inventory: current.inventory.map((item) =>
+          item.id === editing.id
+            ? { ...item, quantity, bay, location: nextLocation }
+            : item,
+        ),
+      }),
+      `${editing.id}: stock set to ${quantity} pieces, ${nextLocation} / ${bay}. Reason: ${reason}`,
+    );
+
+    if (saved) {
+      setEditing(null);
+    } else {
+      setError("Save failed. Check your connection and try again.");
+    }
+    setSaving(false);
+  }
 
   return (
     <>
       <YardHeading
-        eyebrow="YOUR DAILY WORKSPACE"
-        title="Yard overview"
-        description="A clear view of the stock and work ahead."
-      >
-        <Link className="yard-button" href="/yard/mobile">
-          <Smartphone size={18} />
-          Open mobile workspace
-        </Link>
-      </YardHeading>
+        eyebrow="STOCK & STORAGE"
+        title="Yard inventory"
+      />
 
-      <section className="yard-welcome">
-        <div>
-          <span className="yard-welcome-kicker">
-            FROM THE YARD TO THE WORKSHOP
-          </span>
+      <div className="yard-location-grid">
+        {["Outdoor yard", "Warehouse", "Kiln"].map((area) => (
+          <button
+            key={area}
+            onClick={() =>
+              setLocation(location === area ? "All locations" : area)
+            }
+            className={`yard-location-card ${
+              location === area ? "selected" : ""
+            }`}
+            aria-pressed={location === area}
+          >
+            <MapPin size={21} />
 
-          <h2>Keep the day moving.</h2>
-
-          <p>
-            Check your stock. Prepare the next order.
-            <br />
-            Keep your crew in the loop.
-          </p>
-
-          <Link href="/yard/workOrders">
-            View work orders <ArrowRight size={18} />
-          </Link>
-        </div>
-
-        <div className="yard-wood-art" aria-hidden="true">
-          <Trees size={116} strokeWidth={1} />
-          <span>THE CEDAR SHOP</span>
-          <small>YARD OPERATIONS</small>
-        </div>
-      </section>
-
-      <section className="yard-metrics" aria-label="Yard summary">
-        {metrics.map(({ label, value, note, icon: Icon }) => (
-          <article key={label}>
-            <div className="yard-metric-label">
-              {label}
-              <Icon size={19} />
-            </div>
-
-            <strong>{value}</strong>
-            <p>{note}</p>
-          </article>
-        ))}
-      </section>
-
-      <div className="yard-columns">
-        <section className="yard-panel">
-          <div className="yard-section-head">
-            <div>
-              <h2>Work order queue</h2>
-              <p>Next up in the workshop</p>
-            </div>
-
-            <Link href="/yard/workOrders">
-              View all <ArrowUpRight size={16} />
-            </Link>
-          </div>
-
-          <div className="yard-order-list">
-            {activeOrders.length ? (
-              activeOrders.slice(0, 3).map((order) => (
-                <Link
-                  href="/yard/workOrders"
-                  className="yard-order-row"
-                  key={order.id}
-                >
-                  <span className="yard-square-icon">
-                    <ClipboardList size={21} />
-                  </span>
-
-                  <div>
-                    <small>
-                      {order.id} · Due {shortDate(order.due)}
-                    </small>
-                    <h3>{order.title}</h3>
-                    <p>
-                      {order.quantity} pieces · {order.cutLength} in cut length
-                    </p>
-                  </div>
-
-                  <YardBadge
-                    tone={order.status === "In progress" ? "green" : "muted"}
-                  >
-                    {order.status}
-                  </YardBadge>
-                </Link>
-              ))
-            ) : (
-              <p className="yard-empty">All work orders are complete.</p>
-            )}
-          </div>
-        </section>
-
-        <section className="yard-panel">
-          <div className="yard-section-head">
-            <div>
-              <h2>Needs attention</h2>
-              <p>Check before the next job</p>
-            </div>
-
-            <span className="yard-count">{lowStock.length}</span>
-          </div>
-
-          {lowStock.map((item) => (
-            <div className="yard-alert-row" key={item.id}>
-              <TriangleAlert size={18} />
-
-              <div>
-                <strong>{item.name}</strong>
-                <p>
-                  {item.quantity} pieces left · Bay {item.bay}
-                </p>
-              </div>
-
-              <Link
-                href="/yard/inventory"
-                aria-label={`Review ${item.name}`}
-              >
-                <ArrowRight size={18} />
-              </Link>
-            </div>
-          ))}
-
-          {!lowStock.length && (
-            <p className="yard-empty">
-              All stock lines are above their minimum.
-            </p>
-          )}
-
-          <Link href="/yard/losses" className="yard-report-link">
-            Found damaged lumber?
             <span>
-              Log a loss report <ArrowRight size={16} />
+              <strong>{area}</strong>
+              <small>
+                {data.inventory
+                  .filter((item) => item.location === area)
+                  .reduce((sum, item) => sum + item.quantity, 0)}{" "}
+                pieces on hand
+              </small>
             </span>
-          </Link>
-        </section>
+          </button>
+        ))}
       </div>
 
-      <section className="yard-panel yard-activity">
-        <div className="yard-section-head">
-          <div>
-            <h2>Recent activity</h2>
-            <p>Recent changes across the yard workspace</p>
-          </div>
+      <section className="yard-panel">
+        <div className="yard-toolbar">
+          <label className="yard-search">
+            <Search size={18} />
+            <input
+              aria-label="Search inventory"
+              placeholder="Search product, SKU or bay…"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </label>
 
-          <YardBadge tone="muted">Live updates</YardBadge>
+          <select
+            aria-label="Filter storage location"
+            value={location}
+            onChange={(event) => setLocation(event.target.value)}
+          >
+            {["All locations", "Outdoor yard", "Warehouse", "Kiln"].map(
+              (area) => (
+                <option key={area}>{area}</option>
+              ),
+            )}
+          </select>
+
+          <button
+            className={`yard-button secondary ${lowOnly ? "selected" : ""}`}
+            aria-pressed={lowOnly}
+            onClick={() => setLowOnly(!lowOnly)}
+          >
+            <SlidersHorizontal size={16} />
+            Low stock
+          </button>
         </div>
 
-        {data.activity.slice(0, 4).map((item) => (
-          <div key={item.id} className="yard-activity-row">
-            <span className="yard-dot" />
-            <p>{item.text}</p>
-            <time dateTime={item.at}>{shortDate(item.at)}</time>
-          </div>
-        ))}
+        <div className="yard-section-head">
+          <h2>
+            Stock list
+            <span className="yard-inline-count">{items.length}</span>
+          </h2>
+          <span className="yard-muted">Quantity in pieces</span>
+        </div>
+
+        <div className="yard-table-wrap">
+          <table className="yard-table">
+            <thead>
+              <tr>
+                <th>Product / SKU</th>
+                <th>Storage</th>
+                <th>On hand</th>
+                <th>Status</th>
+                <th>
+                  <span className="yard-sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {items.map((item) => (
+                <tr key={item.id}>
+                  <td>
+                    <div className="yard-product">
+                      <span className="yard-square-icon">
+                        <Package size={21} />
+                      </span>
+
+                      <div>
+                        <strong>{item.name}</strong>
+                        <small>
+                          {item.id} · {item.dimensions}
+                        </small>
+                      </div>
+                    </div>
+                  </td>
+
+                  <td>
+                    {item.location}
+                    <small>Bay {item.bay}</small>
+                  </td>
+
+                  <td>
+                    <strong>{item.quantity}</strong>
+                    <small>Min. {item.minimum}</small>
+                  </td>
+
+                  <td>
+                    <YardBadge
+                      tone={item.quantity < item.minimum ? "amber" : "green"}
+                    >
+                      {item.quantity < item.minimum ? "Low stock" : "In stock"}
+                    </YardBadge>
+                  </td>
+
+                  <td>
+                    <button
+                      className="yard-button secondary"
+                      aria-label={`Update ${item.name}`}
+                      onClick={() => {
+                        setEditing(item);
+                        setError("");
+                      }}
+                    >
+                      Update
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {!items.length && (
+          <EmptyState>
+            No stock matches these filters. Try another product or location.
+          </EmptyState>
+        )}
       </section>
+
+      {editing && (
+        <YardDialog title="Update inventory" onClose={() => setEditing(null)}>
+          <form className="yard-form" onSubmit={save}>
+            <p>
+              {editing.name} · {editing.id}
+            </p>
+
+            <label>
+              Count on hand (pieces)
+              <input
+                name="quantity"
+                type="number"
+                min="0"
+                max="1000000"
+                step="1"
+                required
+                defaultValue={editing.quantity}
+              />
+            </label>
+
+            <div className="yard-form-grid">
+              <label>
+                Storage location
+                <select name="location" defaultValue={editing.location}>
+                  {["Outdoor yard", "Warehouse", "Kiln"].map((area) => (
+                    <option key={area}>{area}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                Bay / rack
+                <input
+                  name="bay"
+                  required
+                  maxLength={24}
+                  defaultValue={editing.bay}
+                />
+              </label>
+            </div>
+
+            <label>
+              Reason for adjustment
+              <textarea
+                name="reason"
+                required
+                maxLength={240}
+                placeholder="For example: physical stock count completed"
+              />
+            </label>
+
+            <p className="yard-helper">
+              Use a loss report for damage awaiting review. This form changes
+              the stock count immediately.
+            </p>
+
+            {error && (
+              <p className="yard-form-error" role="alert">
+                {error}
+              </p>
+            )}
+
+            <div className="yard-form-actions">
+              <button
+                type="button"
+                className="yard-button secondary"
+                onClick={() => setEditing(null)}
+              >
+                Cancel
+              </button>
+
+              <button className="yard-button" type="submit" disabled={saving}>
+                {saving ? "Saving…" : "Save inventory"}
+              </button>
+            </div>
+          </form>
+        </YardDialog>
+      )}
     </>
   );
 }

@@ -327,9 +327,6 @@ export default function AdminDashboard() {
               <h2 className="text-xl font-bold">
                 Inventory Management
               </h2>
-              <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                Search products and adjust available quantities.
-              </p>
             </div>
 
             <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-sm font-semibold text-amber-500">
@@ -467,11 +464,6 @@ export default function AdminDashboard() {
           <h2 className="text-xl font-bold">
             Loss Report Approval Queue
           </h2>
-          <p className="mb-5 mt-1 text-sm text-[var(--text-secondary)]">
-            Review damaged or missing lumber. Approving a report deducts the
-            reported quantity from inventory.
-          </p>
-
           <div className="space-y-3">
             {productsLoading && (
               <p role="status" className="text-sm text-[var(--text-muted)]">
@@ -535,11 +527,6 @@ export default function AdminDashboard() {
             ))}
           </div>
         </section>
-
-        <p className="pb-4 text-xs text-[var(--text-muted)]">
-          Inventory, unit costs, and loss reports are synchronized with
-          Firestore. Demonstration records are explicitly marked when loaded.
-        </p>
       </main>
   );
 }

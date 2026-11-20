@@ -95,9 +95,6 @@ export default function CustomerDashboard() {
               <h2 className="text-lg font-semibold text-gray-900">
                 Recent Orders
               </h2>
-              <p className="mt-1 text-sm text-gray-500">
-                Your latest lumber orders
-              </p>
             </div>
 
             <Link

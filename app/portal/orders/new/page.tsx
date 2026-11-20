@@ -156,9 +156,6 @@ export default function NewOrderPage() {
             <h2 className="text-lg font-semibold text-gray-900">
               Lumber Requirements
             </h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Specify the product and quantity you need.
-            </p>
           </div>
 
           <div className="space-y-5 p-6">
@@ -285,9 +282,6 @@ export default function NewOrderPage() {
                 required
                 className={inputClass}
               />
-              <p className="mt-1 text-xs text-gray-500">
-                This is your preferred date, not a confirmed delivery booking.
-              </p>
             </div>
 
             <div>

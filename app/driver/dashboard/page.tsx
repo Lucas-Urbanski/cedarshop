@@ -199,7 +199,6 @@ export default function DriverDashboardPage() {
           <div>
             <p className="driver-eyebrow">YOUR DELIVERY PLAN</p>
             <h2 id="route-title">Today's route</h2>
-            <p>Check each load and destination before heading out.</p>
           </div>
           <span className="driver-route-count">
             {route.length} stops <span aria-hidden="true">·</span> Calgary

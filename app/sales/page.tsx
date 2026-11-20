@@ -319,9 +319,6 @@ export default function SalesDashboard() {
           <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="text-xl font-bold">Customer Quote Builder</h2>
-              <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                Add products, adjust quantities, and calculate a quote.
-              </p>
             </div>
 
             <button

@@ -7,11 +7,9 @@ import type { ChildrenProps, WorkspaceNavigationItem } from "@/types/types";
 import { useYard } from "./YardProvider";
 
 const navigation: readonly WorkspaceNavigationItem[] = [
-  { href: "/yard", label: "Overview", icon: "dashboard" },
-  { href: "/yard/inventory", label: "Inventory", icon: "inventory" },
+  { href: "/yard", label: "Inventory", icon: "inventory" },
   { href: "/yard/workOrders", label: "Work orders", icon: "orders" },
   { href: "/yard/losses", label: "Loss reports", icon: "alert" },
-  { href: "/yard/mobile", label: "Mobile PWA", icon: "mobile" },
 ];
 
 export default function YardShell({ children }: ChildrenProps) {
@@ -50,25 +48,7 @@ export default function YardShell({ children }: ChildrenProps) {
       contentClassName="yard-workspace-main"
     >
       <main id="yard-main" className="yard-main">
-        <div className="yard-demo">
-          <span className="yard-dot" />
-          Floor staff workspace
-          <span>
-            • Firestore · Live updates · {online ? "Online" : "Offline"}
-          </span>
-        </div>
-
-        {notice && (
-          <div className="yard-notice" role="status">
-            {notice}
-          </div>
-        )}
-
         {ready ? children : <p role="status">Loading yard workspace…</p>}
-        <footer className="yard-footer">
-          THE CEDAR SHOP
-          <span>Yard workspace · Live operations</span>
-        </footer>
       </main>
     </WorkspaceShell>
   );
