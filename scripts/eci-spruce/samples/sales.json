@@ -1,0 +1,16 @@
+[
+  {
+    "InvoiceNumber": "INV-90412",
+    "InvoiceDate": "2026-09-14",
+    "CustomerCode": "CUS-2210",
+    "Subtotal": "1,240.00",
+    "DiscountAmount": "40.00",
+    "TaxTotal": "60.00",
+    "Total": "1,260.00",
+    "Balance": "0.00",
+    "SalesRep": "Cody",
+    "Lines": [
+      { "ItemCode": "CED-101", "Description": "2x4 WRC 8ft", "Qty": 100, "UnitPrice": 12.4, "ExtPrice": 1240, "TaxAmount": 60 }
+    ]
+  }
+]
