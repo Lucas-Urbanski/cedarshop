@@ -48,6 +48,20 @@ export default function YardShell({ children }: ChildrenProps) {
       contentClassName="yard-workspace-main"
     >
       <main id="yard-main" className="yard-main">
+        {/* YardProvider reports every failed or completed save here; without it
+            a floor staff change can fail without any feedback. */}
+        {notice && (
+          <div className="yard-notice" role="status">
+            {notice}
+          </div>
+        )}
+
+        {!online && (
+          <div className="yard-notice" role="status">
+            You are offline. Changes will save once the connection returns.
+          </div>
+        )}
+
         {ready ? children : <p role="status">Loading yard workspace…</p>}
       </main>
     </WorkspaceShell>
