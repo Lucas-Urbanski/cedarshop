@@ -19,6 +19,7 @@ import {
 } from "@/components/yard/YardUI";
 
 import { newYardId } from "@/utils/yardData";
+import { feetToInches, formatFeet } from "@/utils/measurements";
 import type { YardWorkOrder } from "@/types/yard";
 
 export default function WorkOrdersPage() {
@@ -39,23 +40,26 @@ export default function WorkOrdersPage() {
     const form = new FormData(event.currentTarget);
     const title = String(form.get("title")).trim();
     const quantity = Number(form.get("quantity"));
-    const cutLength = Number(form.get("cutLength"));
-    const dropCut = Number(form.get("dropCut"));
+    const cutLengthFeet = Number(form.get("cutLength"));
+    const dropCutFeet = Number(form.get("dropCut"));
 
     if (
       !title ||
       !Number.isSafeInteger(quantity) ||
       quantity <= 0 ||
-      !Number.isFinite(cutLength) ||
-      cutLength <= 0 ||
-      !Number.isFinite(dropCut) ||
-      dropCut < 0
+      !Number.isFinite(cutLengthFeet) ||
+      cutLengthFeet <= 0 ||
+      !Number.isFinite(dropCutFeet) ||
+      dropCutFeet < 0
     ) {
       setError(
         "Enter a title, a positive whole-piece quantity and valid measurements.",
       );
       return;
     }
+
+    const cutLength = feetToInches(cutLengthFeet);
+    const dropCut = feetToInches(dropCutFeet);
 
     const order: YardWorkOrder = {
       id: newYardId("WO"),
@@ -168,12 +172,12 @@ export default function WorkOrdersPage() {
 
               <div>
                 <small>Cut length</small>
-                <strong>{order.cutLength} <span>in</span></strong>
+                <strong>{formatFeet(order.cutLength)} <span>ft</span></strong>
               </div>
 
               <div>
                 <small>Drop-cut / pc</small>
-                <strong>{order.dropCut} <span>in</span></strong>
+                <strong>{formatFeet(order.dropCut)} <span>ft</span></strong>
               </div>
             </div>
 
@@ -217,9 +221,10 @@ export default function WorkOrdersPage() {
       )}
 
       <p className="yard-helper">
-        Drop-cut is the recorded offcut length per piece. Work status is
-        synchronized with Firestore; work orders do not reserve or deduct
-        inventory.
+        Cut lengths and drop-cuts are shown in feet; Firestore keeps the
+        equivalent inches. Drop-cut is the recorded offcut length per piece.
+        Work status is synchronized with Firestore; work orders do not reserve
+        or deduct inventory.
       </p>
 
       {creating && (
@@ -268,25 +273,26 @@ export default function WorkOrdersPage() {
               </label>
 
               <label>
-                Finished cut length (in)
+                Finished cut length (ft)
                 <input
                   name="cutLength"
                   type="number"
                   required
                   min="0.01"
-                  max="10000"
+                  max="1000"
                   step="0.01"
+                  placeholder="For example: 8"
                 />
               </label>
 
               <label>
-                Drop-cut per piece (in)
+                Drop-cut per piece (ft)
                 <input
                   name="dropCut"
                   type="number"
                   required
                   min="0"
-                  max="10000"
+                  max="1000"
                   step="0.01"
                   defaultValue="0"
                 />
