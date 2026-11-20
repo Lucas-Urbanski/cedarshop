@@ -2,12 +2,12 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { onAuthStateChanged, type User } from "firebase/auth";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/components/themeProvider";
 import { auth, db } from "@/utils/firebase";
 import type { CustomerProfile } from "@/types/types";
-import { getUserRole } from "@/utils/userProfile";
+import { loadSignedInAccount } from "@/utils/userProfile";
 
 const emptyProfile: CustomerProfile = {
   firstName: "",
@@ -82,17 +82,8 @@ export default function SettingsPage() {
       }
 
       try {
-        const snapshot = await getDoc(doc(db, "users", firebaseUser.uid));
-        if (!snapshot.exists()) {
-          throw new Error("Your account profile could not be found.");
-        }
-
-        const data = snapshot.data();
-        const role = getUserRole(data.role);
-        if (!role) {
-          throw new Error("Your account role could not be recognized.");
-        }
-
+        // Repairs a missing profile instead of stranding the account.
+        const { profile: data } = await loadSignedInAccount(firebaseUser);
         const loadedProfile = profileFromData(data);
         if (isCurrent) {
           setProfile(loadedProfile);

@@ -54,8 +54,17 @@ export async function signInWithGoogle() {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
 
+  const { user } = await signInWithPopup(auth, provider).catch(
+    (error: unknown) => {
+      throw new Error(getPermissionMessage(error, "Google sign-in"));
+    },
+  );
+
+  // The account is authenticated at this point. A profile read or write that
+  // fails (a token that has not reached Firestore yet, or a rules denial) must
+  // not bounce the user back to the sign-in form; the app provisions the
+  // profile on the next screen instead.
   try {
-    const { user } = await signInWithPopup(auth, provider);
     const profileRef = doc(db, "users", user.uid);
     const profileSnapshot = await getDoc(profileRef);
 
@@ -73,11 +82,11 @@ export async function signInWithGoogle() {
         },
       });
     }
-
-    return user;
   } catch (error: unknown) {
-    throw new Error(getPermissionMessage(error, "Google sign-in"));
+    console.error("Could not prepare the Google profile.", error);
   }
+
+  return user;
 }
 
 export async function registerShopUser(

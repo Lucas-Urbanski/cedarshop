@@ -19,6 +19,7 @@ import { GuestOnly } from "@/components/auth/guestOnly";
 import { GoogleSignInButton } from "@/components/auth/googleSignInButton";
 import { PasswordInput } from "@/components/auth/passwordInput";
 import { auth } from "@/utils/firebase";
+import { confirmEmailVerified } from "@/utils/userProfile";
 import type { SignInFormValues } from "@/types/types";
 import {
   sendEmailVerification,
@@ -51,7 +52,9 @@ export default function LoginForm() {
         values.email,
         values.password,
       );
-      if (!user.emailVerified) {
+      // A user who verified in another tab still holds a stale token; refresh
+      // before asking them to verify again.
+      if (!(await confirmEmailVerified(user))) {
         try {
           await sendEmailVerification(user);
         } finally {

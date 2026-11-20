@@ -6,9 +6,11 @@ import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import type { ChildrenProps } from "@/types/types";
 import { auth } from "@/utils/firebase";
-import { getDoc, doc } from "firebase/firestore";
-import { db } from "@/utils/firebase";
-import { getRoleHome, getUserRole } from "@/utils/userProfile";
+import {
+  confirmEmailVerified,
+  getRoleHome,
+  loadSignedInAccount,
+} from "@/utils/userProfile";
 
 export function GuestOnly({ children }: ChildrenProps) {
   const router = useRouter();
@@ -26,17 +28,13 @@ export function GuestOnly({ children }: ChildrenProps) {
         if (firebaseUser) {
           setIsGuest(false);
           setError(null);
-          if (!firebaseUser.emailVerified) {
+          if (!(await confirmEmailVerified(firebaseUser))) {
             router.replace("/");
             return;
           }
 
           try {
-            const profile = await getDoc(doc(db, "users", firebaseUser.uid));
-            const role = getUserRole(profile.data()?.role);
-            if (!profile.exists() || !role) {
-              throw new Error("Your account profile could not be verified.");
-            }
+            const { role } = await loadSignedInAccount(firebaseUser);
             if (isCurrent) router.replace(getRoleHome(role));
           } catch (caughtError) {
             if (isCurrent) {

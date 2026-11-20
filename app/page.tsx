@@ -21,9 +21,11 @@ import type {
   UserProfile,
   WorkflowNavigationItem,
 } from "@/types/types";
-import { auth, db } from "@/utils/firebase";
-import { getUserRole } from "@/utils/userProfile";
-import { doc, getDoc } from "firebase/firestore";
+import { auth } from "@/utils/firebase";
+import {
+  confirmEmailVerified,
+  loadSignedInAccount,
+} from "@/utils/userProfile";
 import useFirestoreCollection from "@/hooks/useFirestoreCollection";
 import type { ProductRecord } from "@/types/business";
 
@@ -103,7 +105,7 @@ export default function HomePage() {
         setLoading(true);
         setAuthError(null);
 
-        if (!firebaseUser || !firebaseUser.emailVerified) {
+        if (!firebaseUser || !(await confirmEmailVerified(firebaseUser))) {
           if (firebaseUser) {
             try {
               await signOut(auth);
@@ -123,30 +125,13 @@ export default function HomePage() {
         }
 
         try {
-          const profileSnapshot = await getDoc(
-            doc(db, "users", firebaseUser.uid),
-          );
-          if (!profileSnapshot.exists()) {
-            throw new Error(
-              "Your Cedar Shop account profile could not be found.",
-            );
-          }
-
-          const profile = profileSnapshot.data();
-          const roleValue = getUserRole(profile.role);
-          if (!roleValue) {
-            throw new Error("Your Cedar Shop account role is not recognized.");
-          }
+          const account = await loadSignedInAccount(firebaseUser);
 
           if (isLatestCheck()) {
             setUser({
-              name:
-                (typeof profile.fullName === "string" && profile.fullName) ||
-                firebaseUser.displayName ||
-                firebaseUser.email ||
-                "Customer",
-              email: firebaseUser.email ?? "",
-              role: roleValue,
+              name: account.fullName,
+              email: account.email,
+              role: account.role,
             });
             setAuthError(null);
           }

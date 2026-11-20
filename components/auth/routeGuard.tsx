@@ -4,10 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
 import type { RouteGuardProps } from "@/types/types";
-import { auth, db } from "@/utils/firebase";
-import { getRoleHome, getUserRole } from "@/utils/userProfile";
+import { auth } from "@/utils/firebase";
+import {
+  confirmEmailVerified,
+  getRoleHome,
+  loadSignedInAccount,
+} from "@/utils/userProfile";
 
 export default function RouteGuard({
   children,
@@ -30,23 +33,21 @@ export default function RouteGuard({
         setIsAuthorized(false);
         setError(null);
 
-        if (!firebaseUser?.emailVerified) {
+        if (!firebaseUser) {
+          router.replace("/auth/login");
+          return;
+        }
+
+        if (!(await confirmEmailVerified(firebaseUser))) {
           router.replace("/auth/login");
           return;
         }
 
         try {
-          const profile = await getDoc(doc(db, "users", firebaseUser.uid));
-          const role = getUserRole(profile.data()?.role);
+          const { role } = await loadSignedInAccount(firebaseUser);
 
-          if (
-            !profile.exists() ||
-            !role ||
-            (allowedRoles && !allowedRoles.includes(role))
-          ) {
-            if (isLatestCheck()) {
-              router.replace(role ? getRoleHome(role) : "/");
-            }
+          if (allowedRoles && !allowedRoles.includes(role)) {
+            if (isLatestCheck()) router.replace(getRoleHome(role));
             return;
           }
 
