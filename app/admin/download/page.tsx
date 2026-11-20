@@ -97,10 +97,6 @@ export default function DownloadPage() {
       <header className="download-heading">
         <p className="download-eyebrow">CEDAR SHOP APPS</p>
         <h1>Take Cedar Shop with you</h1>
-        <p>
-          Install the mobile app on your phone, or get the native desktop app
-          for your computer.
-        </p>
       </header>
 
       <div className="download-options">

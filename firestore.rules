@@ -138,7 +138,16 @@ service cloud.firestore {
 
     match /products/{sku} {
       allow read: if true;
-      allow create, update: if isAdmin()
+      allow create: if (isAdmin()
+          || (isFloorStaff()
+            && request.resource.data.keys().hasOnly(['name', 'price'])))
+        && request.resource.data.keys().hasAll(['name', 'price'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.price is number
+        && request.resource.data.price >= 0;
+      allow update: if isAdmin()
         && request.resource.data.keys().hasAll(['name', 'price'])
         && request.resource.data.name is string
         && request.resource.data.price is number
@@ -148,7 +157,7 @@ service cloud.firestore {
 
     match /inventory/{sku} {
       allow read: if isYardStaff() || isSalesStaff();
-      allow create: if isAdmin()
+      allow create: if isYardStaff()
         && request.resource.data.keys().hasAll([
           'name',
           'dimensions',
@@ -158,7 +167,41 @@ service cloud.firestore {
           'minimum'
         ])
         && request.resource.data.quantity is int
-        && request.resource.data.quantity >= 0;
+        && request.resource.data.quantity >= 0
+        && (isAdmin()
+          || (request.resource.data.keys().hasOnly([
+              'name',
+              'dimensions',
+              'location',
+              'bay',
+              'quantity',
+              'minimum'
+            ])
+            && existsAfter(
+              /databases/$(database)/documents/products/$(sku)
+            )
+            && getAfter(
+              /databases/$(database)/documents/products/$(sku)
+            ).data.name == request.resource.data.name
+            && request.resource.data.name is string
+            && request.resource.data.name.size() > 0
+            && request.resource.data.name.size() <= 120
+            && request.resource.data.dimensions is string
+            && request.resource.data.dimensions.size() > 0
+            && request.resource.data.dimensions.size() <= 80
+            && request.resource.data.location in [
+              'Outdoor yard',
+              'Warehouse',
+              'Kiln'
+            ]
+            && request.resource.data.bay is string
+            && request.resource.data.bay.size() > 0
+            && request.resource.data.bay.size() <= 24
+            && request.resource.data.quantity > 0
+            && request.resource.data.quantity <= 1000000
+            && request.resource.data.minimum is int
+            && request.resource.data.minimum >= 0
+            && request.resource.data.minimum <= 1000000));
       allow update: if isAdmin()
         || (isFloorStaff()
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([

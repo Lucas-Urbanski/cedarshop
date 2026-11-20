@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 
 import useFirestoreCollection from "@/hooks/useFirestoreCollection";
+import AddInventoryDialog from "@/components/inventory/AddInventoryDialog";
 import type {
   InventoryRecord,
   ProductCostRecord,
@@ -54,6 +55,7 @@ export default function AdminDashboard() {
   const [actionMessage, setActionMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [addingInventory, setAddingInventory] = useState(false);
   const costsBySku = useMemo(
     () => new Map(costRecords.map((record) => [record.id, record.cost])),
     [costRecords],
@@ -250,10 +252,6 @@ export default function AdminDashboard() {
           <h1 className="text-3xl font-bold tracking-tight">
             Admin Dashboard
           </h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)]">
-            Manage lumber inventory, review loss reports,
-            and monitor operations.
-          </p>
         </header>
 
         {actionError && <p role="alert" className="text-sm text-red-500">{actionError}</p>}
@@ -270,7 +268,7 @@ export default function AdminDashboard() {
           <section className={cardClass}>
             <h2 className="text-lg font-semibold">No inventory records</h2>
             <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              Add real inventory in Firestore, or explicitly load the clearly marked demonstration records once.
+              Add products and stock here, or explicitly load the clearly marked demonstration records once.
             </p>
             <button
               type="button"
@@ -329,9 +327,18 @@ export default function AdminDashboard() {
               </h2>
             </div>
 
-            <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-sm font-semibold text-amber-500">
-              {lowStockCount} low-stock product(s)
-            </span>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setAddingInventory(true)}
+                className={primaryButton}
+              >
+                Add inventory
+              </button>
+              <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-sm font-semibold text-amber-500">
+                {lowStockCount} low-stock product(s)
+              </span>
+            </div>
           </div>
 
           <label
@@ -532,6 +539,18 @@ export default function AdminDashboard() {
             ))}
           </div>
         </section>
+        {addingInventory && (
+          <AddInventoryDialog
+            products={productRecords}
+            inventory={inventoryRecords}
+            onClose={() => setAddingInventory(false)}
+            onSaved={(message) => {
+              setAddingInventory(false);
+              setActionError("");
+              setActionMessage(message);
+            }}
+          />
+        )}
       </main>
   );
 }

@@ -1,8 +1,15 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Search, SlidersHorizontal, Package, MapPin } from "lucide-react";
+import {
+  Search,
+  SlidersHorizontal,
+  Package,
+  MapPin,
+  Plus,
+} from "lucide-react";
 
+import AddInventoryDialog from "@/components/inventory/AddInventoryDialog";
 import { useYard } from "@/components/yard/YardProvider";
 import {
   YardHeading,
@@ -10,16 +17,22 @@ import {
   YardDialog,
   EmptyState,
 } from "@/components/yard/YardUI";
+import useFirestoreCollection from "@/hooks/useFirestoreCollection";
 
+import type { ProductRecord } from "@/types/business";
 import type { YardStock, YardLocation } from "@/types/yard";
 
 export default function InventoryPage() {
   const { data, update } = useYard();
+  const { items: products, error: productsError } =
+    useFirestoreCollection<ProductRecord>("products");
 
   const [search, setSearch] = useState("");
   const [location, setLocation] = useState("All locations");
   const [lowOnly, setLowOnly] = useState(false);
   const [editing, setEditing] = useState<YardStock | null>(null);
+  const [addingInventory, setAddingInventory] = useState(false);
+  const [inventoryMessage, setInventoryMessage] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -78,7 +91,27 @@ export default function InventoryPage() {
       <YardHeading
         eyebrow="STOCK & STORAGE"
         title="Yard inventory"
-      />
+      >
+        <button
+          className="yard-button"
+          type="button"
+          onClick={() => setAddingInventory(true)}
+        >
+          <Plus size={17} />
+          Add inventory
+        </button>
+      </YardHeading>
+
+      {productsError && (
+        <p className="yard-form-error" role="alert">
+          {productsError}
+        </p>
+      )}
+      {inventoryMessage && (
+        <p className="yard-notice" role="status">
+          {inventoryMessage}
+        </p>
+      )}
 
       <div className="yard-location-grid">
         {["Outdoor yard", "Warehouse", "Kiln"].map((area) => (
@@ -301,6 +334,18 @@ export default function InventoryPage() {
             </div>
           </form>
         </YardDialog>
+      )}
+
+      {addingInventory && (
+        <AddInventoryDialog
+          products={products}
+          inventory={data.inventory}
+          onClose={() => setAddingInventory(false)}
+          onSaved={(message) => {
+            setAddingInventory(false);
+            setInventoryMessage(message);
+          }}
+        />
       )}
     </>
   );

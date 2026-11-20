@@ -5,7 +5,6 @@ import type { ChildrenProps, WorkspaceNavigationItem } from "@/types/types";
 const salesRoles = ["SalesStaff", "Administrator"] as const;
 const navigation: readonly WorkspaceNavigationItem[] = [
   { label: "Sales dashboard", href: "/sales", icon: "dashboard" },
-  { label: "Storefront", href: "/", icon: "store" },
 ];
 
 export default function SalesLayout({ children }: ChildrenProps) {

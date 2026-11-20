@@ -1,0 +1,215 @@
+.inventory-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: min(42rem, calc(100% - 2rem));
+  max-width: 42rem;
+  max-height: min(90vh, 52rem);
+  margin: 0;
+  overflow: auto;
+  padding: 0;
+  border: 1px solid var(--border-hover);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text-primary);
+  box-shadow: 0 24px 80px rgb(0 0 0 / 40%);
+  transform: translate(-50%, -50%);
+}
+
+.yard-main > .inventory-dialog {
+  animation: none;
+}
+
+.inventory-dialog::backdrop {
+  background: rgb(0 0 0 / 68%);
+  backdrop-filter: blur(3px);
+}
+
+.inventory-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.inventory-dialog-eyebrow {
+  margin: 0 0 6px;
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.13em;
+}
+
+.inventory-dialog-header h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.inventory-close-button {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.inventory-close-button:hover {
+  color: var(--text-primary);
+}
+
+.inventory-dialog-content {
+  padding: 20px 24px 24px;
+}
+
+.inventory-mode-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  margin-bottom: 18px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-muted);
+}
+
+.inventory-mode-switch button {
+  min-height: 40px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.inventory-mode-switch button[aria-pressed="true"] {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  box-shadow: 0 1px 5px var(--shadow);
+}
+
+.inventory-mode-switch button:disabled,
+.inventory-close-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.inventory-form {
+  display: grid;
+  gap: 15px;
+}
+
+.inventory-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.inventory-field {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.inventory-field input,
+.inventory-field select {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-hover);
+  border-radius: 8px;
+  outline: none;
+  background: var(--surface-muted);
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 400;
+}
+
+.inventory-field input:focus,
+.inventory-field select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.inventory-form-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.inventory-form-error {
+  margin: 0;
+  color: #fca5a5;
+  font-size: 0.82rem;
+}
+
+.inventory-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.inventory-primary-button,
+.inventory-secondary-button {
+  min-height: 42px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.inventory-primary-button {
+  border: 1px solid var(--accent-strong);
+  background: var(--accent-strong);
+  color: #fff;
+}
+
+.inventory-secondary-button {
+  border: 1px solid var(--border-hover);
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.inventory-primary-button:disabled,
+.inventory-secondary-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+@media (max-width: 520px) {
+  .inventory-dialog-header {
+    padding: 18px;
+  }
+
+  .inventory-dialog-content {
+    padding: 16px 18px 20px;
+  }
+
+  .inventory-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .inventory-primary-button,
+  .inventory-secondary-button {
+    width: 100%;
+  }
+}

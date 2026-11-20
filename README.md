@@ -54,6 +54,11 @@ Existing workspaces use these collections:
 - `yardWorkOrders`, `yardLossReports`, and `yardActivity`: yard operations.
 - `system/demoFixturesV1`: one-time demo seed marker.
 
+Administrators and yard staff can receive stock for existing catalog products
+or create a new product with its initial inventory from the Admin or Yard
+inventory page. New catalog products include a sale price; inventory costs
+remain administrator-only.
+
 An administrator can explicitly load clearly marked demonstration inventory,
 yard records, and route records from the Admin page. The seeder only runs when
 all corresponding collections are empty and never creates orders for another

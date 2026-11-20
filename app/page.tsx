@@ -31,19 +31,25 @@ import type { ProductRecord } from "@/types/business";
 
 const workflowNavigation: WorkflowNavigationItem[] = [
   {
-    label: "Customer Portal",
+    label: "My Orders",
     href: "/portal",
     role: "Customer",
     icon: <ShoppingCart aria-hidden="true" />,
   },
   {
-    label: "Sales Counter & POS",
+    label: "Sales Dashboard",
     href: "/sales",
     role: "SalesStaff",
     icon: <Trees aria-hidden="true" />,
   },
   {
-    label: "Driver Delivery App",
+    label: "Yard Dashboard",
+    href: "/yard",
+    role: "FloorStaff",
+    icon: <Trees aria-hidden="true" />,
+  },
+  {
+    label: "Driver Dashboard",
     href: "/driver/dashboard",
     role: "Driver",
     icon: <Truck aria-hidden="true" />,
