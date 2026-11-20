@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^6.0.2",
-    "firebase": "^13.1.0",
+    "firebase": "^13.4.0",
     "lucide-react": "^1.61.0",
     "next": "16.4.6",
     "react": "19.3.1",
@@ -31,6 +31,7 @@
     "typescript": "^5"
   },
   "overrides": {
+    "@grpc/grpc-js": "^1.14.7",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0"
   }
