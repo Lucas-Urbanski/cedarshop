@@ -19,8 +19,20 @@ import {
 } from "@/components/yard/YardUI";
 
 import { newYardId } from "@/utils/yardData";
-import { feetToInches, formatFeet } from "@/utils/measurements";
 import type { YardWorkOrder } from "@/types/types";
+
+const INCHES_PER_FOOT = 12;
+
+// Work orders store measurements in inches; the crew reads and enters feet.
+function feetToInches(feet: number): number {
+  return Math.round(feet * INCHES_PER_FOOT * 100) / 100;
+}
+
+function formatFeet(inches: number): string {
+  if (!Number.isFinite(inches)) return "0";
+
+  return String(Number((inches / INCHES_PER_FOOT).toFixed(2)));
+}
 
 export default function WorkOrdersPage() {
   const { data, update } = useYard();

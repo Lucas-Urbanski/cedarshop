@@ -7,11 +7,57 @@ import { collection, doc, runTransaction } from "firebase/firestore";
 import useFirestoreCollection from "@/hooks/useFirestoreCollection";
 import type { InventoryRecord, ProductRecord } from "@/types/types";
 import { auth, db } from "@/utils/firebase";
-import {
-  GST_LABEL,
-  calculateQuoteTotals,
-  taxPercentLabel,
-} from "@/utils/tax";
+
+const GST_RATE = 0.05;
+const GST_LABEL = "GST";
+
+const roundMoney = (amount: number) =>
+  Math.round((amount + Number.EPSILON) * 100) / 100;
+
+const taxPercentLabel = (rate = GST_RATE) =>
+  `${Number((rate * 100).toFixed(2))}%`;
+
+// GST is charged on the discounted amount of each line, rounded per line, so
+// the line items always add up to the tax and total printed underneath them.
+function calculateQuoteTotals(
+  lines: readonly { unitPrice: number; quantity: number }[],
+  discountPercent = 0,
+  taxRate = GST_RATE,
+) {
+  const safeRate = Number.isFinite(taxRate) ? Math.max(0, taxRate) : GST_RATE;
+  const safeDiscount = Math.min(
+    100,
+    Math.max(0, Number.isFinite(discountPercent) ? discountPercent : 0),
+  );
+
+  const lineTotals = lines.map(({ unitPrice, quantity }) => {
+    const gross = roundMoney(
+      (Number.isFinite(unitPrice) ? unitPrice : 0) *
+        (Number.isFinite(quantity) ? quantity : 0),
+    );
+    const net = roundMoney(gross - gross * (safeDiscount / 100));
+
+    return { gross, net, tax: roundMoney(net * safeRate) };
+  });
+
+  const subtotal = roundMoney(
+    lineTotals.reduce((sum, line) => sum + line.gross, 0),
+  );
+  const taxable = roundMoney(
+    lineTotals.reduce((sum, line) => sum + line.net, 0),
+  );
+  const tax = roundMoney(lineTotals.reduce((sum, line) => sum + line.tax, 0));
+
+  return {
+    subtotal,
+    discountAmount: roundMoney(subtotal - taxable),
+    taxable,
+    tax,
+    total: roundMoney(taxable + tax),
+    taxRate: safeRate,
+    lines: lineTotals,
+  };
+}
 
 const money = (amount: number) =>
   amount.toLocaleString("en-CA", {

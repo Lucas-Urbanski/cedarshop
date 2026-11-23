@@ -2,10 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
   Menu,
+  Plus,
   Search,
   ShieldAlert,
   ShoppingCart,
@@ -13,11 +16,13 @@ import {
   Truck,
   X,
 } from "lucide-react";
-import Navbar from "@/components/NavBar";
-import ProductCard from "@/components/store/ProductCard";
+import BrandLogo from "@/images/CedarShopLogo.png";
+import { LogoutButton } from "@/components/auth/logoutButton";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import type {
+  NavbarProps,
   ProductCardData,
+  ProductCardProps,
   UserProfile,
   WorkflowNavigationItem,
 } from "@/types/types";
@@ -61,6 +66,125 @@ const workflowNavigation: WorkflowNavigationItem[] = [
     icon: <ShieldAlert aria-hidden="true" />,
   },
 ];
+
+function Navbar({ user, children }: NavbarProps) {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const pathname = usePathname();
+  const router = useRouter();
+  const isSettingsPage = pathname.startsWith("/settings");
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (firebaseUser) => setIsAuthenticated(firebaseUser !== null),
+      (error) => {
+        console.error(
+          "Could not determine whether the user is signed in.",
+          error,
+        );
+        setIsAuthenticated(null);
+      },
+    );
+
+    return unsubscribe;
+  }, []);
+
+  return (
+    <header className="siteHeader">
+      <div className="headerInner">
+        <Link href="/" aria-label="Cedar Shop home">
+          <Image
+            src={BrandLogo}
+            alt="Cedar Shop"
+            width={120}
+            height={120}
+            priority
+            className="headerLogo"
+          />
+        </Link>
+
+        {children}
+
+        <div className="headerActions">
+          {isAuthenticated === true ? (
+            <>
+              {user ? (
+                <span className="headerGreeting">
+                  Hello,{" "}
+                  <strong className="headerUserName">
+                    {user.name.split(" ")[0]}
+                  </strong>
+                </span>
+              ) : null}
+              {isSettingsPage ? (
+                <button
+                  type="button"
+                  className="button buttonSettings"
+                  onClick={() => router.back()}
+                >
+                  Back
+                </button>
+              ) : (
+                <Link href="/settings" className="button buttonSettings">
+                  Settings
+                </Link>
+              )}
+              <LogoutButton className="button buttonSettings" />
+            </>
+          ) : isAuthenticated === false ? (
+            <>
+              <Link href="/auth/login" className="button buttonSettings">
+                Sign In
+              </Link>
+              <Link href="/auth/signup" className="button buttonPrimary">
+                Sign Up
+              </Link>
+            </>
+          ) : null}
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function ProductCard({ product }: ProductCardProps) {
+  return (
+    <article className="popularProductCard">
+      <div className="productCardMedia">
+        <div className="productCardActions">
+          <Link
+            href={`/portal/orders/new?product=${encodeURIComponent(product.sku)}`}
+            className="productAction productCartAction"
+            aria-label={`Add ${product.name} to cart`}
+          >
+            <Plus aria-hidden="true" />
+            Request
+          </Link>
+          <Link
+            href={`/portal/orders/new?product=${encodeURIComponent(product.sku)}`}
+            className="productAction productQuoteAction"
+            aria-label={`Request a quote for ${product.name}`}
+          >
+            <Plus aria-hidden="true" />
+            Quote
+          </Link>
+        </div>
+      </div>
+      <div className="productCardDetails">
+        {product.lowStock ? (
+          <p className="productStockWarning">
+            <span aria-hidden="true">!</span> Low Stock
+          </p>
+        ) : null}
+        <h3>{product.name}</h3>
+        <p className="productSku">SKU: {product.sku}</p>
+        <p className="productPrice">
+          ${product.price} <span>/each</span>
+        </p>
+      </div>
+    </article>
+  );
+}
 
 export default function HomePage() {
   const [menuOpen, setMenuOpen] = useState(false);
