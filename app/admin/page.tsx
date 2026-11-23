@@ -19,7 +19,6 @@ import type {
   YardLossRecord,
 } from "@/types/types";
 import { auth, db } from "@/utils/firebase";
-import { seedDemoData } from "@/utils/demoSeed";
 
 const money = (amount: number) =>
   amount.toLocaleString("en-CA", {
@@ -54,7 +53,6 @@ export default function AdminDashboard() {
   const [actionError, setActionError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [saving, setSaving] = useState(false);
-  const [seeding, setSeeding] = useState(false);
   const [addingInventory, setAddingInventory] = useState(false);
   const costsBySku = useMemo(
     () => new Map(costRecords.map((record) => [record.id, record.cost])),
@@ -216,35 +214,6 @@ export default function AdminDashboard() {
     }
   }
 
-  async function handleSeedDemoData() {
-    const user = auth.currentUser;
-    if (!user) {
-      setActionError("Sign in again before loading demonstration records.");
-      return;
-    }
-    if (productRecords.length || inventoryRecords.length) {
-      setActionError("The workspace already contains inventory records.");
-      return;
-    }
-
-    setSeeding(true);
-    setActionError("");
-    setActionMessage("");
-    try {
-      await seedDemoData(user.uid);
-      setActionMessage("Demonstration inventory, yard records, and route records were loaded.");
-    } catch (error) {
-      console.error("Could not load demonstration records.", error);
-      setActionError(
-        error instanceof Error
-          ? error.message
-          : "Demonstration records could not be loaded.",
-      );
-    } finally {
-      setSeeding(false);
-    }
-  }
-
   return (
       <main className="workspace-page flex-1 space-y-7 text-[var(--text-primary)]">
         <header>
@@ -268,16 +237,8 @@ export default function AdminDashboard() {
           <section className={cardClass}>
             <h2 className="text-lg font-semibold">No inventory records</h2>
             <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              Add products and stock here, or explicitly load the clearly marked demonstration records once.
+              Add a product and its opening stock to start the inventory.
             </p>
-            <button
-              type="button"
-              onClick={handleSeedDemoData}
-              disabled={seeding}
-              className={`${primaryButton} mt-4 disabled:opacity-50`}
-            >
-              {seeding ? "Loading demonstration records…" : "Load demonstration records"}
-            </button>
           </section>
         )}
 
