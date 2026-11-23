@@ -1,81 +1,146 @@
 rules_version = '2';
 
+// The Cedar Shop Lumber Management System.
+//
+// Collections: users, products, productCosts, inventory, vendors, orders,
+// salesQuotes, deliveries, yardWorkOrders, yardLossReports, yardActivity,
+// system. Anything without a match block below is denied, so a new collection
+// needs its own block before the app can use it.
+
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------- helpers
+
     function isAuthenticated() {
       return request.auth != null;
     }
 
+    // A session only counts once the email address is verified. The profile
+    // document is written before verification happens, so that write checks
+    // request.auth instead.
     function signedIn() {
-      return request.auth != null
+      return isAuthenticated()
         && request.auth.token.email_verified == true;
     }
 
-    function userDocExists() {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    function profilePath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
     }
 
-    function userRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    function profileExists() {
+      return signedIn() && exists(profilePath());
     }
 
-    function hasRole(role) {
-      return signedIn()
-        && userDocExists()
-        && (
-          userRole() == role
-          || (role == 'administrator' && userRole() == 'Administrator')
-          || (role == 'floorstaff' && userRole() == 'FloorStaff')
-          || (role == 'salesstaff' && userRole() == 'SalesStaff')
-          || (role == 'driver' && userRole() == 'Driver')
-          || (role == 'customer' && userRole() == 'Customer')
-        );
+    // Roles are stored lower-case by the app; the capitalised values are kept
+    // for accounts created before that.
+    function hasRole(role, legacyRole) {
+      return profileExists() && get(profilePath()).data.role in [role, legacyRole];
     }
 
     function isAdmin() {
-      return hasRole('administrator');
+      return hasRole('administrator', 'Administrator');
     }
 
     function isFloorStaff() {
-      return hasRole('floorstaff');
+      return hasRole('floorstaff', 'FloorStaff');
     }
 
     function isSalesStaff() {
-      return hasRole('salesstaff');
+      return hasRole('salesstaff', 'SalesStaff');
     }
 
     function isDriver() {
-      return hasRole('driver');
+      return hasRole('driver', 'Driver');
     }
 
     function isCustomer() {
-      return hasRole('customer');
+      return hasRole('customer', 'Customer');
     }
 
     function isYardStaff() {
       return isAdmin() || isFloorStaff();
     }
 
-    function isStaffOrAdmin() {
-      return isAdmin() || isSalesStaff() || isFloorStaff() || isDriver();
+    // Only these fields may differ from the stored document.
+    function changesOnly(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
     }
 
+    function wholeNumber(value, minimum, maximum) {
+      return value is int && value >= minimum && value <= maximum;
+    }
+
+    function isText(value, maximumLength) {
+      return value is string && value.size() <= maximumLength;
+    }
+
+    function isFilledText(value, maximumLength) {
+      return isText(value, maximumLength) && value.size() > 0;
+    }
+
+    function isMoney(value) {
+      return value is number && value >= 0 && value <= 100000000;
+    }
+
+    // Optional enrichment fields on a stock record, used by the weight engine.
+    function weightFieldsAreValid() {
+      let data = request.resource.data;
+
+      return (!data.keys().hasAny(['moisturePercent'])
+          || (data.moisturePercent is number
+            && data.moisturePercent >= 0
+            && data.moisturePercent <= 100))
+        && (!data.keys().hasAny(['dryWeightLbs'])
+          || isMoney(data.dryWeightLbs))
+        && (!data.keys().hasAny(['weightPerUnitLbs'])
+          || isMoney(data.weightPerUnitLbs))
+        && (!data.keys().hasAny(['isGreenStock'])
+          || data.isGreenStock is bool);
+    }
+
+    // ------------------------------------------------------------ users
+    // One document per Firebase Auth account, keyed by uid.
+
     match /users/{userId} {
-      // Allow signed-in user to read their own profile even if email_verified hasn't refreshed yet,
-      // preventing false "user not found" states right after sign-up.
-      allow get: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      function addressIsValid() {
+        return request.resource.data.shippingAddress is map
+          && request.resource.data.shippingAddress.keys().hasAll([
+            'street',
+            'city',
+            'postalCode'
+          ])
+          && request.resource.data.shippingAddress.keys().hasOnly([
+            'street',
+            'city',
+            'province',
+            'postalCode'
+          ])
+          && request.resource.data.shippingAddress.street is string
+          && request.resource.data.shippingAddress.city is string
+          && request.resource.data.shippingAddress.postalCode is string
+          && (!request.resource.data.shippingAddress.keys().hasAny(['province'])
+            || request.resource.data.shippingAddress.province is string);
+      }
+
+      function contactIsValid() {
+        return isText(request.resource.data.fullName, 120)
+          && (!request.resource.data.keys().hasAny(['phone'])
+            || isText(request.resource.data.phone, 40))
+          && (!request.resource.data.keys().hasAny(['company'])
+            || isText(request.resource.data.company, 120));
+      }
+
+      // Reading your own profile is allowed before the verification claim
+      // refreshes, so a freshly verified account is never told it is missing.
+      allow get: if isAuthenticated()
+        && (request.auth.uid == userId || isAdmin());
       allow list: if isAdmin();
 
+      // Self-signup and the Google flow create the customer profile. Nobody can
+      // create themselves a staff role.
       allow create: if isAuthenticated()
         && request.auth.uid == userId
-        && request.resource.data.keys().hasAll([
-          'uid',
-          'email',
-          'fullName',
-          'role',
-          'createdAt',
-          'shippingAddress'
-        ])
         && request.resource.data.keys().hasOnly([
           'uid',
           'email',
@@ -88,91 +153,81 @@ service cloud.firestore {
         ])
         && request.resource.data.uid == userId
         && request.resource.data.email == request.auth.token.email
-        && request.resource.data.fullName is string
         && request.resource.data.role == 'customer'
         && request.resource.data.createdAt is timestamp
-        && request.resource.data.shippingAddress is map
-        && request.resource.data.shippingAddress.keys().hasAll([
-          'street',
-          'city',
-          'postalCode'
-        ])
-        && request.resource.data.shippingAddress.keys().hasOnly([
-          'street',
-          'city',
-          'postalCode',
-          'province'
-        ])
-        && request.resource.data.shippingAddress.street is string
-        && request.resource.data.shippingAddress.city is string
-        && request.resource.data.shippingAddress.postalCode is string
-        && (!request.resource.data.shippingAddress.keys().hasAny(['province'])
-          || request.resource.data.shippingAddress.province is string)
-        && (!request.resource.data.keys().hasAny(['phone'])
-          || request.resource.data.phone is string)
-        && (!request.resource.data.keys().hasAny(['company'])
-          || request.resource.data.company is string);
+        && contactIsValid()
+        && addressIsValid();
 
-      allow update: if isAdmin()
-        || (signedIn()
+      // A user may edit their own contact details. Role, uid, email and the
+      // creation date stay frozen unless an administrator changes them.
+      allow update: if (signedIn()
           && request.auth.uid == userId
           && request.resource.data.uid == resource.data.uid
           && request.resource.data.email == resource.data.email
           && request.resource.data.role == resource.data.role
           && request.resource.data.createdAt == resource.data.createdAt
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'fullName',
-            'phone',
-            'company',
-            'shippingAddress'
-          ])
-          && request.resource.data.fullName is string
-          && request.resource.data.phone is string
-          && request.resource.data.company is string
-          && request.resource.data.shippingAddress is map
-          && request.resource.data.shippingAddress.keys().hasAll([
-            'street',
-            'city',
-            'postalCode',
-            'province'
-          ])
-          && request.resource.data.shippingAddress.keys().hasOnly([
-            'street',
-            'city',
-            'postalCode',
-            'province'
-          ])
-          && request.resource.data.shippingAddress.street is string
-          && request.resource.data.shippingAddress.city is string
-          && request.resource.data.shippingAddress.postalCode is string
-          && request.resource.data.shippingAddress.province is string);
+          && changesOnly(['fullName', 'phone', 'company', 'shippingAddress'])
+          && contactIsValid()
+          && addressIsValid())
+        || (isAdmin()
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.email == resource.data.email
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.role in [
+            'customer',
+            'driver',
+            'floorstaff',
+            'salesstaff',
+            'administrator'
+          ]
+          && changesOnly(['fullName', 'phone', 'company', 'shippingAddress', 'role']));
 
       allow delete: if isAdmin();
     }
+
+    // --------------------------------------------------------- products
+    // The public catalogue behind the storefront.
 
     match /products/{sku} {
       allow read: if true;
+
+      // Floor staff add a product as part of receiving new stock; the price is
+      // the only commercial field they set.
       allow create: if (isAdmin()
-          || (isFloorStaff()
-            && request.resource.data.keys().hasOnly(['name', 'price'])))
+          || (isFloorStaff() && request.resource.data.keys().hasOnly(['name', 'price'])))
         && request.resource.data.keys().hasAll(['name', 'price'])
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() <= 120
-        && request.resource.data.price is number
-        && request.resource.data.price >= 0;
+        && isFilledText(request.resource.data.name, 120)
+        && isMoney(request.resource.data.price);
+
       allow update: if isAdmin()
         && request.resource.data.keys().hasAll(['name', 'price'])
-        && request.resource.data.name is string
-        && request.resource.data.price is number
-        && request.resource.data.price >= 0;
+        && isFilledText(request.resource.data.name, 120)
+        && isMoney(request.resource.data.price);
+
       allow delete: if isAdmin();
     }
 
+    // ----------------------------------------------------- productCosts
+    // Unit cost per SKU. Admin and margin reporting only.
+
+    match /productCosts/{sku} {
+      allow read: if isAdmin();
+
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasAll(['cost'])
+        && isMoney(request.resource.data.cost);
+
+      allow delete: if isAdmin();
+    }
+
+    // -------------------------------------------------------- inventory
+    // Live yard stock, keyed by SKU.
+
     match /inventory/{sku} {
-      allow read: if isYardStaff() || isSalesStaff();
-      allow create: if isYardStaff()
-        && request.resource.data.keys().hasAll([
+      function stockShapeIsValid() {
+        let data = request.resource.data;
+
+        return data.keys().hasAll([
           'name',
           'dimensions',
           'location',
@@ -180,49 +235,43 @@ service cloud.firestore {
           'quantity',
           'minimum'
         ])
-        && request.resource.data.quantity is int
-        && request.resource.data.quantity >= 0
-        && (isAdmin()
-          || (request.resource.data.keys().hasOnly([
-              'name',
-              'dimensions',
-              'location',
-              'bay',
-              'quantity',
-              'minimum',
-              'moisturePercent',
-              'dryWeightLbs',
-              'isGreenStock',
-              'weightPerUnitLbs'
-            ])
-            && existsAfter(
-              /databases/$(database)/documents/products/$(sku)
-            )
-            && getAfter(
-              /databases/$(database)/documents/products/$(sku)
-            ).data.name == request.resource.data.name
-            && request.resource.data.name is string
-            && request.resource.data.name.size() > 0
-            && request.resource.data.name.size() <= 120
-            && request.resource.data.dimensions is string
-            && request.resource.data.dimensions.size() > 0
-            && request.resource.data.dimensions.size() <= 80
-            && request.resource.data.location in [
-              'Outdoor yard',
-              'Warehouse',
-              'Kiln'
-            ]
-            && request.resource.data.bay is string
-            && request.resource.data.bay.size() > 0
-            && request.resource.data.bay.size() <= 24
-            && request.resource.data.quantity > 0
-            && request.resource.data.quantity <= 1000000
-            && request.resource.data.minimum is int
-            && request.resource.data.minimum >= 0
-            && request.resource.data.minimum <= 1000000));
-      allow update: if isAdmin()
+          && isFilledText(data.name, 120)
+          && isFilledText(data.dimensions, 80)
+          && data.location in ['Outdoor yard', 'Warehouse', 'Kiln']
+          && isFilledText(data.bay, 24)
+          && wholeNumber(data.quantity, 0, 1000000)
+          && wholeNumber(data.minimum, 0, 1000000)
+          && weightFieldsAreValid();
+      }
+
+      allow get, list: if isYardStaff() || isSalesStaff();
+
+      allow create: if (isAdmin() && stockShapeIsValid())
         || (isFloorStaff()
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          && stockShapeIsValid()
+          && request.resource.data.keys().hasOnly([
+            'name',
+            'dimensions',
+            'location',
+            'bay',
+            'quantity',
+            'minimum',
+            'moisturePercent',
+            'dryWeightLbs',
+            'isGreenStock',
+            'weightPerUnitLbs'
+          ])
+          && request.resource.data.quantity > 0
+          // Receiving stock never invents a catalogue product on the side.
+          && existsAfter(/databases/$(database)/documents/products/$(sku))
+          && getAfter(/databases/$(database)/documents/products/$(sku)).data.name
+            == request.resource.data.name);
+
+      // Floor staff adjust the count, the bay and the moisture readings; the
+      // product identity itself stays with the admin.
+      allow update: if (isAdmin() && stockShapeIsValid())
+        || (isFloorStaff()
+          && changesOnly([
             'quantity',
             'bay',
             'location',
@@ -231,160 +280,340 @@ service cloud.firestore {
             'isGreenStock',
             'weightPerUnitLbs'
           ])
-          && request.resource.data.quantity is int
-          && request.resource.data.quantity >= 0
-          && request.resource.data.bay is string
-          && request.resource.data.location in [
-            'Outdoor yard',
-            'Warehouse',
-            'Kiln'
-          ]);
+          && wholeNumber(request.resource.data.quantity, 0, 1000000)
+          && isFilledText(request.resource.data.bay, 24)
+          && request.resource.data.location in ['Outdoor yard', 'Warehouse', 'Kiln']
+          && weightFieldsAreValid());
+
       allow delete: if isAdmin();
     }
 
-    match /productCosts/{sku} {
-      allow read, write: if isAdmin();
-    }
+    // ---------------------------------------------------------- vendors
+    // Timber suppliers behind restock orders.
 
     match /vendors/{vendorId} {
-      allow read: if isAdmin() || isSalesStaff() || isFloorStaff();
-      allow create, update, delete: if isAdmin();
-    }
+      function vendorIsValid() {
+        let data = request.resource.data;
 
-    match /yardWorkOrders/{workOrderId} {
-      allow read: if isYardStaff();
-      allow create: if isYardStaff()
-        && request.resource.data.createdBy == request.auth.uid
-        && (request.resource.data.status == 'Queued'
-          || (isAdmin() && request.resource.data.status in [
-            'In progress',
-            'Completed'
-          ]))
-        && request.resource.data.quantity is int
-        && request.resource.data.quantity > 0;
-      allow update: if isAdmin()
-        || (isFloorStaff()
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'status',
-            'updatedAt'
-          ])
-          && request.resource.data.status in [
-            'Queued',
-            'In progress',
-            'Completed'
-          ]);
+        return data.keys().hasAll(['name'])
+          && isFilledText(data.name, 200)
+          && (!data.keys().hasAny(['contactName'])
+            || isText(data.contactName, 120))
+          && (!data.keys().hasAny(['email']) || isText(data.email, 200))
+          && (!data.keys().hasAny(['phone']) || isText(data.phone, 40))
+          && (!data.keys().hasAny(['address']) || isText(data.address, 200))
+          && (!data.keys().hasAny(['city']) || isText(data.city, 100))
+          && (!data.keys().hasAny(['province']) || isText(data.province, 100))
+          && (!data.keys().hasAny(['postalCode']) || isText(data.postalCode, 20))
+          && (!data.keys().hasAny(['terms']) || isText(data.terms, 100))
+          && (!data.keys().hasAny(['leadTimeDays'])
+            || wholeNumber(data.leadTimeDays, 0, 365));
+      }
+
+      allow get, list: if isYardStaff() || isSalesStaff();
+
+      allow create, update: if isAdmin() && vendorIsValid();
+
       allow delete: if isAdmin();
     }
 
-    match /yardLossReports/{reportId} {
-      allow read: if isYardStaff() || isSalesStaff();
-      allow create: if isYardStaff()
-        && request.resource.data.createdBy == request.auth.uid
-        && request.resource.data.status == 'Pending review'
-        && request.resource.data.quantity is int
-        && request.resource.data.quantity > 0
-        && request.resource.data.notes is string
-        && request.resource.data.photo is string
-        && request.resource.data.photo.size() <= 400000
-        && (!request.resource.data.keys().hasAny(['tagType'])
-          || request.resource.data.tagType in ['Damaged', 'Lost'])
-        && (!request.resource.data.keys().hasAny(['reason'])
-          || request.resource.data.reason is string)
-        && (!request.resource.data.keys().hasAny(['sku'])
-          || request.resource.data.sku is string);
-      allow update: if isAdmin()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'status',
-          'reviewedBy',
-          'reviewedAt'
-        ])
-        && request.resource.data.status in ['Approved', 'Rejected']
-        && request.resource.data.reviewedBy == request.auth.uid;
-      allow delete: if isAdmin();
-    }
-
-    match /yardActivity/{activityId} {
-      allow read: if isYardStaff();
-      allow create: if isYardStaff()
-        && request.resource.data.createdBy == request.auth.uid
-        && request.resource.data.text is string
-        && request.resource.data.at is string;
-      allow update, delete: if false;
-    }
+    // ----------------------------------------------------------- orders
+    // Customer order requests. Prices are quoted by staff, so a customer cannot
+    // set a total.
 
     match /orders/{orderId} {
-      allow get, list: if isAdmin()
-        || isSalesStaff()
-        || (isCustomer() && resource.data.customerUid == request.auth.uid);
-      allow create: if (isCustomer() && request.resource.data.customerUid == request.auth.uid)
-        || isSalesStaff()
-        || isAdmin();
-      allow update: if isAdmin()
-        || isSalesStaff()
-        || (isCustomer()
-          && resource.data.customerUid == request.auth.uid
-          && resource.data.status == 'Pending'
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'items',
-            'quantity',
-            'unit',
-            'status'
-          ])
-          && request.resource.data.items is string
-          && request.resource.data.quantity is int
-          && request.resource.data.quantity > 0
+      function customerOwns() {
+        return signedIn() && request.auth.uid == resource.data.customerUid;
+      }
+
+      function orderShapeIsValid() {
+        let data = request.resource.data;
+
+        return data.keys().hasOnly([
+          'customerUid',
+          'date',
+          'productType',
+          'dimensions',
+          'items',
+          'quantity',
+          'unit',
+          'deliveryDate',
+          'deliveryAddress',
+          'notes',
+          'total',
+          'status',
+          'createdAt'
+        ])
+          && wholeNumber(data.quantity, 1, 1000000)
+          && isText(data.items, 500)
+          && isText(data.productType, 200)
+          && isText(data.dimensions, 100)
+          && isText(data.unit, 40)
+          && isText(data.date, 20)
+          && isText(data.deliveryDate, 20)
+          && isText(data.deliveryAddress, 300)
+          && isText(data.notes, 2000)
+          && isText(data.createdAt, 40);
+      }
+
+      function pendingEditIsValid() {
+        return resource.data.status == 'Pending'
+          && changesOnly(['items', 'quantity', 'unit', 'status'])
+          && request.resource.data.customerUid == resource.data.customerUid
           && request.resource.data.total == resource.data.total
-          && request.resource.data.status in ['Pending', 'Cancelled']);
+          && wholeNumber(request.resource.data.quantity, 1, 1000000)
+          && isText(request.resource.data.items, 500)
+          && isText(request.resource.data.unit, 40)
+          && request.resource.data.status in ['Pending', 'Cancelled'];
+      }
+
+      allow get, list: if customerOwns() || isAdmin() || isSalesStaff();
+
+      // A customer files their own request with no price on it. Staff can enter
+      // an order taken at the counter.
+      allow create: if orderShapeIsValid()
+        && ((isCustomer()
+            && request.resource.data.customerUid == request.auth.uid
+            && request.resource.data.total == 0
+            && request.resource.data.status == 'Pending')
+          || ((isSalesStaff() || isAdmin())
+            && isMoney(request.resource.data.total)
+            && request.resource.data.status in [
+              'Pending',
+              'In Progress',
+              'Delivered'
+            ]));
+
+      // Customers edit or cancel their own pending order. Staff move orders
+      // through fulfilment and attach pricing.
+      allow update: if (customerOwns() && pendingEditIsValid())
+        || ((isAdmin() || isSalesStaff())
+          && request.resource.data.customerUid == resource.data.customerUid
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.status in [
+            'Pending',
+            'In Progress',
+            'Delivered',
+            'Cancelled'
+          ]
+          && wholeNumber(request.resource.data.quantity, 1, 1000000)
+          && isMoney(request.resource.data.total));
+
       allow delete: if isAdmin();
     }
 
-    match /deliveries/{deliveryId} {
-      allow get, list: if isAdmin()
-        || isSalesStaff()
-        || (isCustomer() && resource.data.customerUid == request.auth.uid)
-        || (isDriver()
-          && (resource.data.driverUid == request.auth.uid
-            || resource.data.isDemo == true));
-      allow create, delete: if isAdmin();
-      allow update: if isAdmin()
-        || (isDriver()
-          && (resource.data.driverUid == request.auth.uid
-            || resource.data.isDemo == true)
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'status',
-            'updatedAt',
-            'deliveredAt',
-            'photoUrl',
-            'lastLocation'
-          ])
-          && request.resource.data.status in [
-            'Ready',
-            'In Progress',
-            'Delivered'
-          ]);
-    }
+    // ------------------------------------------------------ salesQuotes
+    // Counter quotes: line prices, discount and 5% GST.
 
     match /salesQuotes/{quoteId} {
-      allow read: if isAdmin()
+      function quoteIsValid() {
+        let data = request.resource.data;
+
+        return data.createdBy == request.auth.uid
+          && isFilledText(data.customerName, 200)
+          && data.items is list
+          && data.items.size() > 0
+          && data.items.size() <= 200
+          && isMoney(data.subtotal)
+          && data.discountPercent is number
+          && data.discountPercent >= 0
+          && data.discountPercent <= 100
+          && data.taxRate == 0.05
+          && isMoney(data.tax)
+          && isMoney(data.taxableSubtotal)
+          && isMoney(data.discountAmount)
+          && isMoney(data.total)
+          // The summary has to reconcile with the lines above it.
+          && data.subtotal - data.taxableSubtotal - data.discountAmount <= 0.01
+          && data.taxableSubtotal + data.discountAmount - data.subtotal <= 0.01
+          && data.taxableSubtotal + data.tax - data.total <= 0.01
+          && data.total - data.taxableSubtotal - data.tax <= 0.01
+          // 5% GST, allowing for per-line rounding.
+          && data.tax >= data.taxableSubtotal * 0.05
+            - (data.items.size() * 0.005 + 0.01)
+          && data.tax <= data.taxableSubtotal * 0.05
+            + (data.items.size() * 0.005 + 0.01);
+      }
+
+      allow get, list: if isAdmin()
         || (isSalesStaff() && resource.data.createdBy == request.auth.uid);
-      allow create: if isSalesStaff()
-        && request.resource.data.createdBy == request.auth.uid
-        && request.resource.data.customerName is string
-        && request.resource.data.items is list
-        && request.resource.data.subtotal is number
-        && request.resource.data.discountPercent is number
-        && request.resource.data.discountPercent >= 0
-        && request.resource.data.discountPercent <= 100
-        && request.resource.data.total is number;
+
+      allow create: if (isSalesStaff() || isAdmin()) && quoteIsValid();
+
       allow update, delete: if isAdmin();
     }
+
+    // ------------------------------------------------------- deliveries
+    // Driver routes, keyed by delivery id.
+
+    match /deliveries/{deliveryId} {
+      function driverOwns() {
+        return signedIn()
+          && (resource.data.driverUid == request.auth.uid
+            || (resource.data.isDemo == true && isDriver()));
+      }
+
+      allow get, list: if driverOwns()
+        || (isAuthenticated()
+          && resource.data.customerUid == request.auth.uid)
+        || isAdmin()
+        || isSalesStaff();
+
+      // Status only moves forward: Ready -> In Progress -> Delivered. The
+      // proof-of-delivery fields are recorded as the stop is completed.
+      allow update: if driverOwns()
+        && changesOnly([
+          'status',
+          'updatedAt',
+          'deliveredAt',
+          'photoUrl',
+          'lastLocation'
+        ])
+        && isText(request.resource.data.updatedAt, 40)
+        && (!request.resource.data.keys().hasAny(['deliveredAt'])
+          || isText(request.resource.data.deliveredAt, 40))
+        && (!request.resource.data.keys().hasAny(['photoUrl'])
+          || (request.resource.data.photoUrl is string
+            && request.resource.data.photoUrl.size() <= 400000))
+        && (!request.resource.data.keys().hasAny(['lastLocation'])
+          || isText(request.resource.data.lastLocation, 200))
+        && ((resource.data.status == 'Ready'
+            && request.resource.data.status == 'In Progress')
+          || (resource.data.status == 'In Progress'
+            && request.resource.data.status == 'Delivered'));
+
+      allow create, delete: if isAdmin();
+    }
+
+    // ---------------------------------------------------- yardWorkOrders
+    // Saw and millwork queue. Measurements are stored in inches.
+
+    match /yardWorkOrders/{orderId} {
+      function orderIsValid(statuses) {
+        let data = request.resource.data;
+
+        return data.keys().hasAll([
+          'title',
+          'stockId',
+          'quantity',
+          'cutLength',
+          'dropCut',
+          'due',
+          'priority',
+          'status',
+          'notes',
+          'createdBy',
+          'updatedAt'
+        ])
+          && isFilledText(data.title, 200)
+          && isText(data.stockId, 60)
+          && wholeNumber(data.quantity, 1, 100000)
+          && data.cutLength is number
+          && data.cutLength > 0
+          && data.dropCut is number
+          && data.dropCut >= 0
+          && isText(data.due, 20)
+          && data.priority in ['Normal', 'High']
+          && data.status in statuses
+          && isText(data.notes, 2000)
+          && isText(data.updatedAt, 40);
+      }
+
+      allow get, list: if isYardStaff();
+
+      allow create: if isAuthenticated()
+        && request.resource.data.createdBy == request.auth.uid
+        && ((isFloorStaff() && orderIsValid(['Queued']))
+          || (isAdmin() && orderIsValid(['Queued', 'In progress', 'Completed'])));
+
+      // Floor staff only advance the queue; they never rewrite an order.
+      allow update: if (isFloorStaff()
+          && changesOnly(['status', 'updatedAt'])
+          && isText(request.resource.data.updatedAt, 40)
+          && ((resource.data.status == 'Queued'
+              && request.resource.data.status == 'In progress')
+            || (resource.data.status == 'In progress'
+              && request.resource.data.status == 'Completed')))
+        || (isAdmin()
+          && request.resource.data.createdBy == resource.data.createdBy
+          && orderIsValid(['Queued', 'In progress', 'Completed']));
+
+      allow delete: if isAdmin();
+    }
+
+    // --------------------------------------------------- yardLossReports
+    // Damage and loss claims. Inventory is only deducted once an administrator
+    // approves, which the admin screen does in the same transaction.
+
+    match /yardLossReports/{reportId} {
+      function reportIsValid() {
+        let data = request.resource.data;
+
+        return data.keys().hasAll([
+          'stockId',
+          'quantity',
+          'notes',
+          'photo',
+          'created',
+          'status',
+          'createdBy'
+        ])
+          && isText(data.stockId, 60)
+          && wholeNumber(data.quantity, 1, 100000)
+          && isText(data.notes, 2000)
+          && data.photo is string
+          && data.photo.size() <= 400000
+          && isText(data.created, 40)
+          && data.status == 'Pending review'
+          && data.createdBy == request.auth.uid
+          && (!data.keys().hasAny(['reason'])
+            || data.reason in ['Yard damage', 'Transport damage', 'Other'])
+          && (!data.keys().hasAny(['tagType'])
+            || data.tagType in ['Damaged', 'Lost'])
+          && (!data.keys().hasAny(['sku']) || isText(data.sku, 60));
+      }
+
+      allow get, list: if isYardStaff() || isSalesStaff();
+
+      allow create: if (isFloorStaff() || isAdmin()) && reportIsValid();
+
+      // Review happens once; a reviewed report cannot be rewritten or re-reviewed.
+      allow update: if isAdmin()
+        && resource.data.status == 'Pending review'
+        && changesOnly(['status', 'reviewedBy', 'reviewedAt'])
+        && request.resource.data.status in ['Approved', 'Rejected']
+        && request.resource.data.reviewedBy == request.auth.uid
+        && request.resource.data.reviewedAt is timestamp;
+
+      allow delete: if isAdmin();
+    }
+
+    // ------------------------------------------------------ yardActivity
+    // Append-only feed shown on the yard overview.
+
+    match /yardActivity/{activityId} {
+      allow get, list: if isYardStaff();
+
+      allow create: if isYardStaff()
+        && request.resource.data.keys().hasAll(['text', 'at', 'createdBy'])
+        && isFilledText(request.resource.data.text, 500)
+        && isText(request.resource.data.at, 40)
+        && request.resource.data.createdBy == request.auth.uid;
+
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    // ------------------------------------------------------------ system
+    // Demo-fixture marker and future settings documents.
 
     match /system/{documentId} {
       allow read, write: if isAdmin();
     }
 
+    // Default deny: anything without a rule above stays closed.
     match /{document=**} {
-      allow read, write: if isAdmin();
+      allow read, write: if false;
     }
   }
 }
