@@ -12,12 +12,12 @@ const driverRoles = ["Driver", "Administrator"] as const;
 
 const navigation: readonly WorkspaceNavigationItem[] = [
   {
-    href: "/driver/dashboard",
+    href: "/driver",
     label: "Delivery",
     icon: "dashboard",
   },
   {
-    href: "/driver/dashboard#stops",
+    href: "/driver#stops",
     label: "Route stops",
     icon: "mapPin",
   },

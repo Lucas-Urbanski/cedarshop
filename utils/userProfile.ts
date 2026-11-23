@@ -29,7 +29,7 @@ export function getRoleHome(role: UserRole): string {
     case "Customer":
       return "/portal";
     case "Driver":
-      return "/driver/dashboard";
+      return "/driver";
     case "FloorStaff":
       return "/yard";
     case "SalesStaff":

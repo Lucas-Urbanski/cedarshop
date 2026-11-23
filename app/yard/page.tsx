@@ -307,12 +307,6 @@ export default function InventoryPage() {
                 placeholder="For example: physical stock count completed"
               />
             </label>
-
-            <p className="yard-helper">
-              Use a loss report for damage awaiting review. This form changes
-              the stock count immediately.
-            </p>
-
             {error && (
               <p className="yard-form-error" role="alert">
                 {error}

@@ -4,7 +4,6 @@ import type { ChildrenProps, WorkspaceNavigationItem } from "@/types/types";
 
 const navigation: readonly WorkspaceNavigationItem[] = [
   { label: "Orders", href: "/portal", icon: "orders" },
-  { label: "New order", href: "/portal/newOrders", icon: "newOrder" },
   { label: "Deliveries", href: "/portal/deliveries", icon: "truck" },
 ];
 

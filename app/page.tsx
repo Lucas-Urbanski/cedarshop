@@ -27,10 +27,7 @@ import type {
   WorkflowNavigationItem,
 } from "@/types/types";
 import { auth } from "@/utils/firebase";
-import {
-  confirmEmailVerified,
-  loadSignedInAccount,
-} from "@/utils/userProfile";
+import { confirmEmailVerified, loadSignedInAccount } from "@/utils/userProfile";
 import useFirestoreCollection from "@/hooks/useFirestoreCollection";
 import type { ProductRecord } from "@/types/types";
 
@@ -55,7 +52,7 @@ const workflowNavigation: WorkflowNavigationItem[] = [
   },
   {
     label: "Driver Dashboard",
-    href: "/driver/dashboard",
+    href: "/driver",
     role: "Driver",
     icon: <Truck aria-hidden="true" />,
   },
@@ -110,9 +107,8 @@ function Navbar({ user, children }: NavbarProps) {
             <>
               {user ? (
                 <span className="headerGreeting">
-                  Hello,{" "}
                   <strong className="headerUserName">
-                    {user.name.split(" ")[0]}
+                    Hello, {user.name.split(" ")[0]}
                   </strong>
                 </span>
               ) : null}
@@ -153,7 +149,7 @@ function ProductCard({ product }: ProductCardProps) {
       <div className="productCardMedia">
         <div className="productCardActions">
           <Link
-            href={`/portal/orders/new?product=${encodeURIComponent(product.sku)}`}
+            href={`/portal/?product=${encodeURIComponent(product.sku)}`}
             className="productAction productCartAction"
             aria-label={`Add ${product.name} to cart`}
           >
@@ -161,7 +157,7 @@ function ProductCard({ product }: ProductCardProps) {
             Request
           </Link>
           <Link
-            href={`/portal/orders/new?product=${encodeURIComponent(product.sku)}`}
+            href={`/portal/?product=${encodeURIComponent(product.sku)}`}
             className="productAction productQuoteAction"
             aria-label={`Request a quote for ${product.name}`}
           >
@@ -229,8 +225,7 @@ export default function HomePage() {
       auth,
       async (firebaseUser) => {
         const currentCheck = ++authCheck;
-        const isLatestCheck = () =>
-          isCurrent && currentCheck === authCheck;
+        const isLatestCheck = () => isCurrent && currentCheck === authCheck;
 
         setLoading(true);
         setAuthError(null);
@@ -361,7 +356,9 @@ export default function HomePage() {
         </p>
       ) : null}
       {productsError ? (
-        <p className="storeAuthError" role="alert">{productsError}</p>
+        <p className="storeAuthError" role="alert">
+          {productsError}
+        </p>
       ) : null}
 
       <section className="storeHero" aria-labelledby="hero-title">
@@ -387,9 +384,7 @@ export default function HomePage() {
                   : "No products are currently available."}
               </p>
             )}
-            {productsLoading && (
-              <p role="status">Loading products…</p>
-            )}
+            {productsLoading && <p role="status">Loading products…</p>}
           </div>
           <button
             className="popularProductsPrevious"
