@@ -8,7 +8,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       <div className="productCardMedia">
         <div className="productCardActions">
           <Link
-            href={`/portal/orders/new?product=${encodeURIComponent(product.sku)}`}
+            href={`/portal/newOrders?product=${encodeURIComponent(product.sku)}`}
             className="productAction productCartAction"
             aria-label={`Add ${product.name} to cart`}
           >
@@ -16,7 +16,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             Request
           </Link>
           <Link
-            href={`/portal/orders/new?product=${encodeURIComponent(product.sku)}`}
+            href={`/portal/newOrders?product=${encodeURIComponent(product.sku)}`}
             className="productAction productQuoteAction"
             aria-label={`Request a quote for ${product.name}`}
           >
