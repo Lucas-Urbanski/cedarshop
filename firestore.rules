@@ -2,26 +2,33 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
     function signedIn() {
       return request.auth != null
         && request.auth.token.email_verified == true;
     }
 
+    function userDocExists() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function userRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
     function hasRole(role) {
       return signedIn()
-        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && userDocExists()
         && (
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role
-          || (role == 'administrator'
-            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Administrator')
-          || (role == 'floorstaff'
-            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'FloorStaff')
-          || (role == 'salesstaff'
-            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'SalesStaff')
-          || (role == 'driver'
-            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Driver')
-          || (role == 'customer'
-            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Customer')
+          userRole() == role
+          || (role == 'administrator' && userRole() == 'Administrator')
+          || (role == 'floorstaff' && userRole() == 'FloorStaff')
+          || (role == 'salesstaff' && userRole() == 'SalesStaff')
+          || (role == 'driver' && userRole() == 'Driver')
+          || (role == 'customer' && userRole() == 'Customer')
         );
     }
 
@@ -49,11 +56,17 @@ service cloud.firestore {
       return isAdmin() || isFloorStaff();
     }
 
-    match /users/{userId} {
-      allow get: if signedIn() && request.auth.uid == userId;
-      allow list: if false;
+    function isStaffOrAdmin() {
+      return isAdmin() || isSalesStaff() || isFloorStaff() || isDriver();
+    }
 
-      allow create: if request.auth != null
+    match /users/{userId} {
+      // Allow signed-in user to read their own profile even if email_verified hasn't refreshed yet,
+      // preventing false "user not found" states right after sign-up.
+      allow get: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+
+      allow create: if isAuthenticated()
         && request.auth.uid == userId
         && request.resource.data.keys().hasAll([
           'uid',
@@ -100,40 +113,41 @@ service cloud.firestore {
         && (!request.resource.data.keys().hasAny(['company'])
           || request.resource.data.company is string);
 
-      allow update: if signedIn()
-        && request.auth.uid == userId
-        && request.resource.data.uid == resource.data.uid
-        && request.resource.data.email == resource.data.email
-        && request.resource.data.role == resource.data.role
-        && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'fullName',
-          'phone',
-          'company',
-          'shippingAddress'
-        ])
-        && request.resource.data.fullName is string
-        && request.resource.data.phone is string
-        && request.resource.data.company is string
-        && request.resource.data.shippingAddress is map
-        && request.resource.data.shippingAddress.keys().hasAll([
-          'street',
-          'city',
-          'postalCode',
-          'province'
-        ])
-        && request.resource.data.shippingAddress.keys().hasOnly([
-          'street',
-          'city',
-          'postalCode',
-          'province'
-        ])
-        && request.resource.data.shippingAddress.street is string
-        && request.resource.data.shippingAddress.city is string
-        && request.resource.data.shippingAddress.postalCode is string
-        && request.resource.data.shippingAddress.province is string;
+      allow update: if isAdmin()
+        || (signedIn()
+          && request.auth.uid == userId
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.email == resource.data.email
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'fullName',
+            'phone',
+            'company',
+            'shippingAddress'
+          ])
+          && request.resource.data.fullName is string
+          && request.resource.data.phone is string
+          && request.resource.data.company is string
+          && request.resource.data.shippingAddress is map
+          && request.resource.data.shippingAddress.keys().hasAll([
+            'street',
+            'city',
+            'postalCode',
+            'province'
+          ])
+          && request.resource.data.shippingAddress.keys().hasOnly([
+            'street',
+            'city',
+            'postalCode',
+            'province'
+          ])
+          && request.resource.data.shippingAddress.street is string
+          && request.resource.data.shippingAddress.city is string
+          && request.resource.data.shippingAddress.postalCode is string
+          && request.resource.data.shippingAddress.province is string);
 
-      allow delete: if false;
+      allow delete: if isAdmin();
     }
 
     match /products/{sku} {
@@ -175,7 +189,11 @@ service cloud.firestore {
               'location',
               'bay',
               'quantity',
-              'minimum'
+              'minimum',
+              'moisturePercent',
+              'dryWeightLbs',
+              'isGreenStock',
+              'weightPerUnitLbs'
             ])
             && existsAfter(
               /databases/$(database)/documents/products/$(sku)
@@ -207,7 +225,11 @@ service cloud.firestore {
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'quantity',
             'bay',
-            'location'
+            'location',
+            'moisturePercent',
+            'dryWeightLbs',
+            'isGreenStock',
+            'weightPerUnitLbs'
           ])
           && request.resource.data.quantity is int
           && request.resource.data.quantity >= 0
@@ -222,6 +244,11 @@ service cloud.firestore {
 
     match /productCosts/{sku} {
       allow read, write: if isAdmin();
+    }
+
+    match /vendors/{vendorId} {
+      allow read: if isAdmin() || isSalesStaff() || isFloorStaff();
+      allow create, update, delete: if isAdmin();
     }
 
     match /yardWorkOrders/{workOrderId} {
@@ -250,7 +277,7 @@ service cloud.firestore {
     }
 
     match /yardLossReports/{reportId} {
-      allow read: if isYardStaff();
+      allow read: if isYardStaff() || isSalesStaff();
       allow create: if isYardStaff()
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.status == 'Pending review'
@@ -258,7 +285,13 @@ service cloud.firestore {
         && request.resource.data.quantity > 0
         && request.resource.data.notes is string
         && request.resource.data.photo is string
-        && request.resource.data.photo.size() <= 400000;
+        && request.resource.data.photo.size() <= 400000
+        && (!request.resource.data.keys().hasAny(['tagType'])
+          || request.resource.data.tagType in ['Damaged', 'Lost'])
+        && (!request.resource.data.keys().hasAny(['reason'])
+          || request.resource.data.reason is string)
+        && (!request.resource.data.keys().hasAny(['sku'])
+          || request.resource.data.sku is string);
       allow update: if isAdmin()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'status',
@@ -283,16 +316,11 @@ service cloud.firestore {
       allow get, list: if isAdmin()
         || isSalesStaff()
         || (isCustomer() && resource.data.customerUid == request.auth.uid);
-      allow create: if isCustomer()
-        && request.resource.data.customerUid == request.auth.uid
-        && request.resource.data.status == 'Pending'
-        && request.resource.data.total == 0
-        && request.resource.data.quantity is int
-        && request.resource.data.quantity > 0
-        && request.resource.data.quantity <= 1000000
-        && request.resource.data.items is string
-        && request.resource.data.deliveryAddress is string;
+      allow create: if (isCustomer() && request.resource.data.customerUid == request.auth.uid)
+        || isSalesStaff()
+        || isAdmin();
       allow update: if isAdmin()
+        || isSalesStaff()
         || (isCustomer()
           && resource.data.customerUid == request.auth.uid
           && resource.data.status == 'Pending'
@@ -312,6 +340,7 @@ service cloud.firestore {
 
     match /deliveries/{deliveryId} {
       allow get, list: if isAdmin()
+        || isSalesStaff()
         || (isCustomer() && resource.data.customerUid == request.auth.uid)
         || (isDriver()
           && (resource.data.driverUid == request.auth.uid
@@ -323,7 +352,10 @@ service cloud.firestore {
             || resource.data.isDemo == true)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'status',
-            'updatedAt'
+            'updatedAt',
+            'deliveredAt',
+            'photoUrl',
+            'lastLocation'
           ])
           && request.resource.data.status in [
             'Ready',

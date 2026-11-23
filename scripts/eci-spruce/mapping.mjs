@@ -1,38 +1,30 @@
-// Field-by-field guess at the ECI Spruce export shape, mapped onto this app's
-// Firestore model. Nothing here has been confirmed against a real export: the
-// client data is still held by the vendor, so every row carries a confidence
-// level and the source names are candidate lists, not fixed columns.
-//
-// When the real export arrives, edit the `source` arrays here (cheapest fix)
-// and re-run `npm run migrate:eci -- <entity> <file>`; the converter reports
-// any source column it could not place.
-
 export const CONFIDENCE = {
-  high: "high", // near-certain name in any lumber ERP export
-  medium: "medium", // plausible; verify against the header row
-  guess: "guess", // invented; expect to change it
-};
+  high: "high",
+  medium: "medium",
+  guess: "guess",
+} as const;
 
-const money = (value) => {
+export type ConfidenceLevel = (typeof CONFIDENCE)[keyof typeof CONFIDENCE];
+export type StorageLocation = "Outdoor yard" | "Warehouse" | "Kiln";
+export type LossReason = "damaged" | "lost" | "warped" | "giveaway" | "kiln_loss";
+
+export const money = (value: unknown): number => {
   if (value === null || value === undefined || value === "") return 0;
   const cleaned = String(value).replace(/[^0-9.-]/g, "");
   const parsed = Number(cleaned);
-
   return Number.isFinite(parsed) ? Math.round(parsed * 100) / 100 : 0;
 };
 
-const integer = (value) => {
+export const integer = (value: unknown): number => {
   if (value === null || value === undefined || value === "") return 0;
   const parsed = Number(String(value).replace(/[^0-9.-]/g, ""));
-
   return Number.isFinite(parsed) ? Math.trunc(parsed) : 0;
 };
 
-const text = (value) =>
+export const text = (value: unknown): string =>
   value === null || value === undefined ? "" : String(value).trim();
 
-const decimal = (value) => {
-  // Lumber dimensions arrive as 2, 1-1/2, 1 1/2, 5/4 ...
+export const decimal = (value: unknown): number => {
   const raw = text(value);
   if (!raw) return 0;
 
@@ -45,24 +37,22 @@ const decimal = (value) => {
   if (fraction) return Number(fraction[1]) / Number(fraction[2]);
 
   const parsed = Number(raw.replace(/[^0-9.]/g, ""));
-
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
-export const LOCATION_MAP = [
+export const LOCATION_MAP: Array<{ match: RegExp; value: StorageLocation }> = [
   { match: /kiln|dry/i, value: "Kiln" },
   { match: /warehouse|shop|inside|indoor|shed/i, value: "Warehouse" },
   { match: /yard|outdoor|outside|rack|canopy/i, value: "Outdoor yard" },
 ];
 
-export const location = (value) => {
+export const location = (value: unknown): StorageLocation => {
   const raw = text(value);
   const hit = LOCATION_MAP.find((entry) => entry.match.test(raw));
-
   return hit ? hit.value : "Outdoor yard";
 };
 
-export const dateOnly = (value) => {
+export const dateOnly = (value: unknown): string => {
   const raw = text(value);
   if (!raw) return "";
 
@@ -72,41 +62,53 @@ export const dateOnly = (value) => {
   const northAmerican = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (northAmerican) {
     const [, month, day, year] = northAmerican;
-
     return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
   }
 
   const parsed = new Date(raw);
-
-  return Number.isNaN(parsed.getTime())
-    ? ""
-    : parsed.toISOString().slice(0, 10);
+  return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString().slice(0, 10);
 };
 
-export const dimensionsFrom = (value) => {
-  const thicknessValue = decimal(value("Thickness"));
-  const widthValue = decimal(value("Width"));
-  const lengthValue = decimal(value("Length"));
-  const lengthUom = value("LengthUOM");
-  if (!thicknessValue || !widthValue) return "";
+// Always normalizes lengths to inches so Work Orders don't mix feet & inches
+export const dimensionsFrom = (getVal: (col: string) => unknown): string => {
+  const thickness = decimal(getVal("Thickness"));
+  const width = decimal(getVal("Width"));
+  const length = decimal(getVal("Length"));
+  const lengthUom = text(getVal("LengthUOM"));
+  if (!thickness || !width) return "";
 
-  const uom = /^(i|in|inch|inches|")$/i.test(text(lengthUom)) ? "in" : "ft";
-  const lengthLabel = lengthValue
-    ? ` · ${lengthValue} ${uom}`
-    : "";
+  const lengthInches = length
+    ? /^(ft|foot|feet|')$/i.test(lengthUom)
+      ? length * 12
+      : length
+    : 0;
 
-  return `${thicknessValue} × ${widthValue}${lengthLabel}`;
+  return lengthInches
+    ? `${thickness}" × ${width}" × ${lengthInches}"`
+    : `${thickness}" × ${width}"`;
 };
 
-/**
- * One entry per Firestore collection. `id` lists candidate source columns for
- * the document id; `fields` lists candidate source columns per target field.
- */
-export const MAPPINGS = {
+export interface FieldMapping {
+  target: string;
+  source: string[];
+  confidence: ConfidenceLevel;
+  transform: (val: any) => any;
+  fallback?: (getVal: (col: string) => unknown) => any;
+  fallbackColumns?: string[];
+  note?: string;
+}
+
+export interface EntityMapping {
+  label: string;
+  collection: string;
+  id: string[];
+  fields: FieldMapping[];
+}
+
+export const MAPPINGS: Record<string, EntityMapping> = {
   items: {
-    label: "Inventory master (items, costs, retail pricing)",
+    label: "Inventory master (items, stock, pricing, weights)",
     collection: "inventory",
-    companionCollections: ["products", "productCosts"],
     id: ["ItemCode", "ItemID", "ItemNo", "SKU", "ProductCode"],
     fields: [
       {
@@ -134,6 +136,7 @@ export const MAPPINGS = {
         transform: text,
         fallback: dimensionsFrom,
         fallbackColumns: ["Thickness", "Width", "Length", "LengthUOM"],
+        note: "Normalized to inches to prevent feet-vs-inches bugs in Work Orders.",
       },
       {
         target: "quantity",
@@ -160,18 +163,17 @@ export const MAPPINGS = {
         transform: text,
       },
       {
-        target: "cost",
+        target: "unitCost",
         source: ["StandardCost", "AverageCost", "LastCost", "UnitCost"],
         confidence: CONFIDENCE.medium,
         transform: money,
-        collection: "productCosts",
+        note: "Protected by Firestore rules so only admins can read/write.",
       },
       {
-        target: "price",
+        target: "retailPrice",
         source: ["RetailPrice", "SellPrice", "ListPrice", "Price1", "Price"],
         confidence: CONFIDENCE.high,
         transform: money,
-        collection: "products",
       },
       {
         target: "unit",
@@ -186,30 +188,34 @@ export const MAPPINGS = {
         transform: text,
       },
       {
-        target: "weightPerUnit",
+        target: "weightPerUnitLbs",
         source: ["WeightPerUnit", "LbsPerUnit", "UnitWeight"],
         confidence: CONFIDENCE.guess,
         transform: decimal,
-        note: "Feeds the dry vs green weight engine; verify the unit (lb vs kg).",
+      },
+      {
+        target: "moisturePercent",
+        source: ["MoistureContent", "MC", "Moisture"],
+        confidence: CONFIDENCE.guess,
+        transform: decimal,
       },
       {
         target: "isGreenStock",
         source: ["GreenFlag", "IsGreen", "MoistureCode"],
         confidence: CONFIDENCE.guess,
-        transform: (value) => /^(y|yes|true|1|green|gd)/i.test(text(value)),
-        note: "Outdoor yard stock defaults to green unless the export says otherwise.",
+        transform: (value: unknown) => /^(y|yes|true|1|green|gd)/i.test(text(value)),
       },
       {
-        target: "active",
-        source: ["ActiveFlag", "Active", "Discontinued", "Status"],
-        confidence: CONFIDENCE.medium,
-        transform: (value) => !/^(n|no|false|0|discontinued|inactive)/i.test(text(value)),
+        target: "status",
+        source: ["Status"],
+        confidence: CONFIDENCE.guess,
+        transform: () => "available",
       },
     ],
   },
 
   customers: {
-    label: "Accounts receivable / customers",
+    label: "Customers",
     collection: "customers",
     id: ["CustomerCode", "CustNo", "CustomerID", "AccountCode"],
     fields: [
@@ -229,8 +235,7 @@ export const MAPPINGS = {
         target: "email",
         source: ["Email", "EmailAddress", "BillToEmail"],
         confidence: CONFIDENCE.high,
-        transform: (value) => text(value).toLowerCase(),
-        note: "Used to link the imported account to a Firebase Auth user on first sign-in.",
+        transform: (value: unknown) => text(value).toLowerCase(),
       },
       {
         target: "phone",
@@ -239,52 +244,22 @@ export const MAPPINGS = {
         transform: text,
       },
       {
-        target: "shippingAddress.street",
+        target: "shippingAddress",
         source: ["Address1", "ShipToAddress1", "BillToAddress1"],
         confidence: CONFIDENCE.medium,
-        transform: text,
-      },
-      {
-        target: "shippingAddress.city",
-        source: ["City", "ShipToCity", "BillToCity"],
-        confidence: CONFIDENCE.medium,
-        transform: text,
-      },
-      {
-        target: "shippingAddress.province",
-        source: ["Province", "State", "ShipToProvince"],
-        confidence: CONFIDENCE.medium,
-        transform: text,
-      },
-      {
-        target: "shippingAddress.postalCode",
-        source: ["PostalCode", "Zip", "ZipCode", "ShipToPostalCode"],
-        confidence: CONFIDENCE.medium,
-        transform: text,
-      },
-      {
-        target: "creditLimit",
-        source: ["CreditLimit", "CreditLimitAmount"],
-        confidence: CONFIDENCE.medium,
-        transform: money,
-      },
-      {
-        target: "balance",
-        source: ["Balance", "CurrentBalance", "ARBalance"],
-        confidence: CONFIDENCE.medium,
-        transform: money,
-      },
-      {
-        target: "terms",
-        source: ["Terms", "TermsCode", "PaymentTerms"],
-        confidence: CONFIDENCE.medium,
-        transform: text,
+        transform: (value: unknown) => text(value),
       },
       {
         target: "taxCode",
         source: ["TaxCode", "TaxGroup", "TaxStatus"],
         confidence: CONFIDENCE.medium,
         transform: text,
+      },
+      {
+        target: "balance",
+        source: ["Balance", "CurrentBalance", "ARBalance"],
+        confidence: CONFIDENCE.medium,
+        transform: money,
       },
     ],
   },
@@ -301,51 +276,15 @@ export const MAPPINGS = {
         transform: text,
       },
       {
-        target: "contactName",
-        source: ["Contact", "ContactName", "BuyerName"],
-        confidence: CONFIDENCE.medium,
-        transform: text,
-      },
-      {
         target: "email",
         source: ["Email", "EmailAddress", "OrderEmail"],
         confidence: CONFIDENCE.high,
-        transform: (value) => text(value).toLowerCase(),
+        transform: (value: unknown) => text(value).toLowerCase(),
       },
       {
         target: "phone",
         source: ["Phone", "PhoneNumber"],
         confidence: CONFIDENCE.high,
-        transform: text,
-      },
-      {
-        target: "address",
-        source: ["Address1", "Address"],
-        confidence: CONFIDENCE.medium,
-        transform: text,
-      },
-      {
-        target: "city",
-        source: ["City"],
-        confidence: CONFIDENCE.medium,
-        transform: text,
-      },
-      {
-        target: "province",
-        source: ["Province", "State"],
-        confidence: CONFIDENCE.medium,
-        transform: text,
-      },
-      {
-        target: "postalCode",
-        source: ["PostalCode", "Zip", "ZipCode"],
-        confidence: CONFIDENCE.medium,
-        transform: text,
-      },
-      {
-        target: "terms",
-        source: ["Terms", "TermsCode", "PaymentTerms"],
-        confidence: CONFIDENCE.medium,
         transform: text,
       },
       {
@@ -358,8 +297,8 @@ export const MAPPINGS = {
   },
 
   sales: {
-    label: "Sales history / invoices",
-    collection: "invoices",
+    label: "Sales / quotes / orders",
+    collection: "orders",
     id: ["InvoiceNumber", "InvoiceNo", "DocumentNo", "OrderNumber"],
     fields: [
       {
@@ -375,103 +314,28 @@ export const MAPPINGS = {
         transform: dateOnly,
       },
       {
-        target: "dueDate",
-        source: ["DueDate", "PaymentDueDate"],
-        confidence: CONFIDENCE.medium,
-        transform: dateOnly,
-      },
-      {
         target: "subtotal",
         source: ["Subtotal", "NetAmount", "GoodsAmount"],
         confidence: CONFIDENCE.high,
         transform: money,
       },
       {
-        target: "discountAmount",
-        source: ["DiscountAmount", "Discount"],
-        confidence: CONFIDENCE.medium,
-        transform: money,
-      },
-      {
-        target: "taxableSubtotal",
-        source: ["TaxableAmount", "TaxableSubtotal"],
-        confidence: CONFIDENCE.medium,
-        transform: money,
-      },
-      {
-        target: "tax",
+        target: "taxAmount",
         source: ["TaxTotal", "TaxAmount", "GSTAmount", "Tax"],
         confidence: CONFIDENCE.high,
         transform: money,
       },
       {
-        target: "total",
+        target: "totalAmount",
         source: ["Total", "InvoiceTotal", "DocumentTotal", "GrossAmount"],
         confidence: CONFIDENCE.high,
         transform: money,
       },
       {
-        target: "balance",
-        source: ["Balance", "AmountDue", "OpenBalance"],
-        confidence: CONFIDENCE.medium,
-        transform: money,
-      },
-      {
-        target: "salesRep",
-        source: ["SalesRep", "Salesperson", "RepCode"],
-        confidence: CONFIDENCE.medium,
-        transform: text,
-      },
-      {
-        target: "lines",
-        source: ["Lines", "InvoiceLines", "Details", "LineItems"],
+        target: "status",
+        source: ["Status"],
         confidence: CONFIDENCE.guess,
-        transform: (value) =>
-          Array.isArray(value)
-            ? value.map((line) => ({
-                sku: text(
-                  line.ItemCode ?? line.SKU ?? line.ProductCode ?? line.Item,
-                ),
-                name: text(line.Description ?? line.ItemDescription),
-                quantity: integer(line.Qty ?? line.Quantity),
-                unitPrice: money(line.UnitPrice ?? line.Price),
-                lineTotal: money(line.ExtPrice ?? line.ExtendedPrice),
-                tax: money(line.TaxAmount ?? line.Tax),
-              }))
-            : [],
-        note: "Nested line arrays only survive a JSON export; a CSV export needs the line file joined on invoice number.",
-      },
-    ],
-  },
-
-  accounts: {
-    label: "General ledger accounts",
-    collection: "accounts",
-    id: ["AccountNumber", "AccountNo", "GLAccount", "AccountCode"],
-    fields: [
-      {
-        target: "description",
-        source: ["Description", "AccountName", "Name"],
-        confidence: CONFIDENCE.high,
-        transform: text,
-      },
-      {
-        target: "type",
-        source: ["Type", "AccountType", "Category"],
-        confidence: CONFIDENCE.medium,
-        transform: text,
-      },
-      {
-        target: "balance",
-        source: ["Balance", "CurrentBalance", "Amount"],
-        confidence: CONFIDENCE.medium,
-        transform: money,
-      },
-      {
-        target: "asOf",
-        source: ["AsOfDate", "BalanceDate", "PeriodEnd"],
-        confidence: CONFIDENCE.guess,
-        transform: dateOnly,
+        transform: () => "delivered",
       },
     ],
   },

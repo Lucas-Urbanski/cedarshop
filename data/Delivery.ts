@@ -14,7 +14,8 @@ export const initialDriverDeliveries: DriverDelivery[] = [
       { name: "2×4×8 SPF dimensional lumber", quantity: 48, unit: "pieces" },
       { name: "3/4 in. plywood sheets", quantity: 12, unit: "sheets" },
     ],
-    instructions: "Use the east entrance. Call on arrival; the site gate is locked.",
+    instructions:
+      "Use the east entrance. Call on arrival; the site gate is locked.",
   },
   {
     id: "02",
