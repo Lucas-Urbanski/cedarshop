@@ -5,7 +5,7 @@ import type { Delivery, DeliveryStatus } from "@/types/types";
 import { where } from "firebase/firestore";
 
 import useFirestoreCollection from "@/hooks/useFirestoreCollection";
-import type { DeliveryRecord } from "@/types/business";
+import type { DeliveryRecord } from "@/types/types";
 import { auth } from "@/utils/firebase";
 
 function getStatusStyle(status: DeliveryStatus) {

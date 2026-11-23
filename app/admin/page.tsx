@@ -17,7 +17,7 @@ import type {
   ProductCostRecord,
   ProductRecord,
   YardLossRecord,
-} from "@/types/business";
+} from "@/types/types";
 import { auth, db } from "@/utils/firebase";
 import { seedDemoData } from "@/utils/demoSeed";
 

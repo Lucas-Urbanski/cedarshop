@@ -6,8 +6,8 @@ import { X } from "lucide-react";
 import type {
   InventoryRecord,
   ProductRecord,
-} from "@/types/business";
-import type { YardLocation } from "@/types/yard";
+} from "@/types/types";
+import type { YardLocation } from "@/types/types";
 import {
   createInventoryProduct,
   receiveInventory,

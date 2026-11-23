@@ -20,7 +20,7 @@ import {
 
 import { newYardId } from "@/utils/yardData";
 import { feetToInches, formatFeet } from "@/utils/measurements";
-import type { YardWorkOrder } from "@/types/yard";
+import type { YardWorkOrder } from "@/types/types";
 
 export default function WorkOrdersPage() {
   const { data, update } = useYard();

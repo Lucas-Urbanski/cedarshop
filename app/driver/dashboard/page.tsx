@@ -8,7 +8,7 @@ import { doc, runTransaction, where } from "firebase/firestore";
 import useFirestoreCollection from "@/hooks/useFirestoreCollection";
 import useAuthDisplayName from "@/hooks/useAuthDisplayName";
 import useLocalToday from "@/hooks/useLocalToday";
-import type { DeliveryRecord } from "@/types/business";
+import type { DeliveryRecord } from "@/types/types";
 import type { DriverStatusFilter, DriverStopStatus } from "@/types/types";
 import { auth, db } from "@/utils/firebase";
 

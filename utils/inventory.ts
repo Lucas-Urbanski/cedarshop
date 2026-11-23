@@ -5,8 +5,8 @@ import {
   type Transaction,
 } from "firebase/firestore";
 
-import type { InventoryRecord, ProductRecord } from "@/types/business";
-import type { YardLocation } from "@/types/yard";
+import type { InventoryRecord, ProductRecord } from "@/types/types";
+import type { YardLocation } from "@/types/types";
 import { auth, db } from "@/utils/firebase";
 
 const locations: readonly YardLocation[] = [

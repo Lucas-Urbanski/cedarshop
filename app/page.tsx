@@ -27,7 +27,7 @@ import {
   loadSignedInAccount,
 } from "@/utils/userProfile";
 import useFirestoreCollection from "@/hooks/useFirestoreCollection";
-import type { ProductRecord } from "@/types/business";
+import type { ProductRecord } from "@/types/types";
 
 const workflowNavigation: WorkflowNavigationItem[] = [
   {

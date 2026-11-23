@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import type { YardData } from "@/types/yard";
 
 export type Identified<T> = T & { id: string };
 
@@ -251,3 +250,129 @@ export type ThemeContextValue = {
   theme: Theme;
   toggleTheme: () => void;
 };
+
+export type YardLocation = "Outdoor yard" | "Warehouse" | "Kiln";
+
+export interface YardStock {
+  id: string;
+  name: string;
+  dimensions: string;
+  location: YardLocation;
+  bay: string;
+  quantity: number;
+  minimum: number;
+}
+
+export interface YardWorkOrder {
+  id: string;
+  title: string;
+  stockId: string;
+  quantity: number;
+  cutLength: number;
+  dropCut: number;
+  due: string;
+  priority: "Normal" | "High";
+  status: "Queued" | "In progress" | "Completed";
+  notes: string;
+  createdBy?: string;
+  updatedAt?: string;
+}
+
+export interface YardLoss {
+  id: string;
+  stockId: string;
+  quantity: number;
+  reason: "Yard damage" | "Transport damage" | "Other";
+  notes: string;
+  photo: string;
+  created: string;
+  status: "Pending review" | "Approved" | "Rejected";
+  createdBy?: string;
+}
+
+export interface YardData {
+  version: 1;
+  inventory: YardStock[];
+  orders: YardWorkOrder[];
+  losses: YardLoss[];
+  activity: {
+    id: string;
+    text: string;
+    at: string;
+  }[];
+}
+
+export interface ProductRecord {
+  id: string;
+  name: string;
+  price: number;
+}
+
+export type InventoryRecord = YardStock;
+
+export interface ProductCostRecord {
+  cost: number;
+}
+
+export interface CustomerOrderRecord extends Order {
+  customerUid: string;
+  productType: string;
+  dimensions: string;
+  deliveryDate: string;
+  deliveryAddress: string;
+  notes: string;
+  createdAt: string;
+}
+
+export interface DeliveryRecord extends DriverDelivery {
+  customerUid: string;
+  driverUid: string | null;
+  deliveryDate: string;
+  driverName: string;
+  itemsSummary: string;
+  trackingNote: string;
+  isDemo?: boolean;
+}
+
+export interface YardWorkOrderRecord extends YardWorkOrder {
+  createdBy: string;
+  updatedAt: string;
+}
+
+export interface YardLossRecord extends YardLoss {
+  createdBy: string;
+}
+
+export interface SalesQuoteItemRecord {
+  sku: string;
+  name: string;
+  unitPrice: number;
+  quantity: number;
+  /** Line total after the quote discount. */
+  lineTotal?: number;
+  /** GST charged on this line. */
+  tax?: number;
+}
+
+export interface SalesQuoteRecord {
+  id: string;
+  customerName: string;
+  createdBy: string;
+  createdAt: string;
+  items: SalesQuoteItemRecord[];
+  subtotal: number;
+  discountPercent: number;
+  discountAmount?: number;
+  /** Subtotal after discount; the amount GST is charged on. */
+  taxableSubtotal?: number;
+  taxRate?: number;
+  tax?: number;
+  total: number;
+}
+
+export interface YardActivityRecord {
+  id: string;
+  text: string;
+  at: string;
+  createdBy: string;
+}

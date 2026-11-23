@@ -15,7 +15,7 @@ import type {
   ProductRecord,
   YardLossRecord,
   YardWorkOrderRecord,
-} from "@/types/business";
+} from "@/types/types";
 
 const demoProducts: ProductRecord[] = [
   {

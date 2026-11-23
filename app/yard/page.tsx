@@ -19,8 +19,8 @@ import {
 } from "@/components/yard/YardUI";
 import useFirestoreCollection from "@/hooks/useFirestoreCollection";
 
-import type { ProductRecord } from "@/types/business";
-import type { YardStock, YardLocation } from "@/types/yard";
+import type { ProductRecord } from "@/types/types";
+import type { YardStock, YardLocation } from "@/types/types";
 
 export default function InventoryPage() {
   const { data, update } = useYard();

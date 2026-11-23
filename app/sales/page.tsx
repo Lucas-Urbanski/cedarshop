@@ -5,7 +5,7 @@ import type { SalesProduct, SalesQuoteItem } from "@/types/types";
 import { collection, doc, runTransaction } from "firebase/firestore";
 
 import useFirestoreCollection from "@/hooks/useFirestoreCollection";
-import type { InventoryRecord, ProductRecord } from "@/types/business";
+import type { InventoryRecord, ProductRecord } from "@/types/types";
 import { auth, db } from "@/utils/firebase";
 import {
   GST_LABEL,

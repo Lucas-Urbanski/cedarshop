@@ -6,7 +6,7 @@ import type { Order, OrderStatus } from "@/types/types";
 import { doc, runTransaction, where } from "firebase/firestore";
 
 import useFirestoreCollection from "@/hooks/useFirestoreCollection";
-import type { CustomerOrderRecord } from "@/types/business";
+import type { CustomerOrderRecord } from "@/types/types";
 import { auth, db } from "@/utils/firebase";
 import { formatCalendarDate } from "@/utils/dates";
 

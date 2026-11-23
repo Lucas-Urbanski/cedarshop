@@ -17,13 +17,13 @@ import {
 } from "firebase/firestore";
 
 import type { ChildrenProps, YardContextValue } from "@/types/types";
-import type { YardData } from "@/types/yard";
+import type { YardData } from "@/types/types";
 import type {
   InventoryRecord,
   YardActivityRecord,
   YardLossRecord,
   YardWorkOrderRecord,
-} from "@/types/business";
+} from "@/types/types";
 import { auth, db } from "@/utils/firebase";
 
 const emptyYardData: YardData = {

@@ -15,7 +15,7 @@ import {
 
 import { newYardId } from "@/utils/yardData";
 import { auth } from "@/utils/firebase";
-import type { YardLoss } from "@/types/yard";
+import type { YardLoss } from "@/types/types";
 
 const maxPhotoDataUrlLength = 400_000;
 
