@@ -1,4 +1,0 @@
-ItemCode,Description,Species,Grade,Thickness,Width,Length,LengthUOM,OnHandQty,ReorderPoint,Location,BinLocation,AverageCost,RetailPrice,StockingUnit,PrimaryVendor,WeightPerUnit,GreenFlag,ActiveFlag,BinQty,FreightClass
-CED-101,"2x4 Western Red Cedar - 8ft",Western Red Cedar,Select,2,4,8,FT,762,50,Outdoor Yard,A-01,7.85,12.40,PCS,VEN-01,9.6,Y,Y,0,55
-CED-102,2x6 Western Red Cedar - 10ft,Western Red Cedar,Select,2,6,10,FT,340,30,Warehouse,W-04,12.10,19.99,PCS,VEN-01,18.2,Y,Y,0,70
-CED-103,4x4 Cedar Post - 8ft,Western Red Cedar,Standard,4,4,8,FT,128,20,Kiln,K-02,19.40,32.50,PCS,VEN-02,24.8,N,Y,0,85

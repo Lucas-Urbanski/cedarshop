@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "migrate:eci": "node scripts/eci-spruce/convert.mjs"
+    "lint": "eslint"
   },
   "dependencies": {
     "@hookform/resolvers": "^6.0.2",

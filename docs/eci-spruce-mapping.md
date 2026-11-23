@@ -1,70 +1,79 @@
 # ECI Spruce to Firestore mapping (guessed)
 
-Status: **unverified**. The client data is still held by the outgoing vendor, so every
-source column below is a guess built from how lumber ERPs name things. The mapping
-lives in code at `scripts/eci-spruce/mapping.mjs`; when the real export arrives, edit
-the `source` arrays there and re-run the converter. It reports any column it cannot
-place, which is the list to work through.
+Status: **unverified**. The client data is still held by the outgoing vendor, so
+every source column below is a guess built from how lumber ERPs name things.
+The mapping lives in code at `utils/mapping.mjs`; when the real export arrives,
+correct the `source` arrays there and re-check the documents against
+`firestore.rules`.
+
+`mapRecord(family, row)` in that module turns one export row into the Firestore
+documents it would produce, and reports the columns it could not place. It writes
+nothing itself.
 
 Confidence: `high` = near-certain, `medium` = plausible and worth checking first,
 `guess` = invented, expect to change it.
 
 ## Target collections
 
-| Collection | Written from | Used by |
-| --- | --- | --- |
-| `inventory` | items | yard inventory, admin stock table, sales availability |
-| `products` | items (retail price) | storefront, sales quote pricing |
-| `productCosts` | items (cost) | margin reporting, loss write-off value |
-| `customers` | customers | account records; linked to a Firebase Auth user by email |
-| `vendors` | vendors | vendor profiles and restock orders |
-| `invoices` | sales | sales reports, tax history |
-| `accounts` | accounts | general ledger reference data |
+| Family | Target collection | Status | Document id from |
+| --- | --- | --- | --- |
+| items | `inventory` | ready | `ItemCode`, `ItemID`, `ItemNo`, `SKU`, `ProductCode` |
+| customers | `users` | ready | `Email`, `EmailAddress`, `BillToEmail` |
+| vendors | `vendors` | planned | `VendorCode`, `VendorNo`, `SupplierCode`, `VendorID` |
+| sales | `salesQuotes` | ready | `InvoiceNumber`, `InvoiceNo`, `DocumentNo`, `OrderNumber` |
+| accounts | none yet | planned | `AccountNumber`, `AccountNo`, `GLAccount` |
 
-## Inventory master (items, costs, retail pricing) (`items` -> `inventory`)
+`ready` means the collection and its rules exist today. `planned` means the app
+has no home for that data yet; `mapRecord` refuses those families so nothing is
+imported into a collection that does not exist.
 
-Document id from: `ItemCode`, `ItemID`, `ItemNo`, `SKU`, `ProductCode`
+## Inventory master (stock, cost, retail price) (`items`)
+
+Target: `inventory` plus `products`, `productCosts` (ready)
 
 | Firestore field | Guessed Spruce column(s) | Confidence | Note |
 | --- | --- | --- | --- |
 | `name` | `Description`, `ItemDescription`, `LongDescription`, `Name` | high |  |
-| `species` | `Species`, `SpeciesCode`, `WoodSpecies` | medium |  |
-| `grade` | `Grade`, `GradeCode` | medium |  |
 | `dimensions` | `Dimensions`, `Size`, `NominalSize` | guess |  |
-| `quantity` | `OnHand`, `OnHandQty`, `QtyOnHand`, `QuantityOnHand`, `Stock` | high |  |
+| `quantity` | `OnHand`, `OnHandQty`, `QtyOnHand`, `QuantityOnHand`, `Stock` | high | Must be a whole number or firestore.rules rejects the write. |
 | `minimum` | `ReorderPoint`, `MinStock`, `Minimum`, `ReorderLevel` | medium |  |
-| `location` | `Location`, `Warehouse`, `YardCode`, `StockLocation` | medium |  |
+| `location` | `Location`, `Warehouse`, `YardCode`, `StockLocation` | medium | Mapped onto Outdoor yard / Warehouse / Kiln. |
 | `bay` | `BinLocation`, `Bin`, `Bay`, `Rack` | medium |  |
 | `productCosts/cost` | `StandardCost`, `AverageCost`, `LastCost`, `UnitCost` | medium |  |
 | `products/price` | `RetailPrice`, `SellPrice`, `ListPrice`, `Price1`, `Price` | high |  |
+| `species` | `Species`, `SpeciesCode`, `WoodSpecies` | medium |  |
+| `grade` | `Grade`, `GradeCode` | medium |  |
 | `unit` | `StockingUnit`, `UOM`, `UnitOfMeasure`, `SellUnit` | medium |  |
 | `vendorCode` | `VendorCode`, `PrimaryVendor`, `Vendor`, `SupplierCode` | medium |  |
-| `weightPerUnit` | `WeightPerUnit`, `LbsPerUnit`, `UnitWeight` | guess | Feeds the dry vs green weight engine; verify the unit (lb vs kg). |
-| `isGreenStock` | `GreenFlag`, `IsGreen`, `MoistureCode` | guess | Outdoor yard stock defaults to green unless the export says otherwise. |
+| `weightPerUnitLbs` | `WeightPerUnit`, `LbsPerUnit`, `UnitWeight` | guess | Feeds the dry vs green weight engine; confirm the export is in pounds. |
+| `moisturePercent` | `MoisturePercent`, `MoistureContent`, `MCPercent`, `Moisture` | guess | Must land between 0 and 100 or firestore.rules rejects the write. |
+| `dryWeightLbs` | `DryWeight`, `DryWeightLbs`, `KilnDryWeight` | guess | Only present when the export carries a kiln-dry weight. |
+| `isGreenStock` | `GreenFlag`, `IsGreen`, `MoistureCode` | guess |  |
 | `active` | `ActiveFlag`, `Active`, `Discontinued`, `Status` | medium |  |
 
-## Accounts receivable / customers (`customers` -> `customers`)
+## Accounts receivable / customers (`customers`)
 
-Document id from: `CustomerCode`, `CustNo`, `CustomerID`, `AccountCode`
+Target: `users` (ready)
+
+User documents are keyed by Firebase Auth uid, not by customer code. Look the account up by email first and create it if it does not exist; the rest of the profile matches the users document shape.
 
 | Firestore field | Guessed Spruce column(s) | Confidence | Note |
 | --- | --- | --- | --- |
 | `fullName` | `Name`, `CustomerName`, `BillToName`, `ContactName` | high |  |
 | `company` | `Company`, `CompanyName`, `TradeName` | medium |  |
-| `email` | `Email`, `EmailAddress`, `BillToEmail` | high | Used to link the imported account to a Firebase Auth user on first sign-in. |
+| `email` | `Email`, `EmailAddress`, `BillToEmail` | high |  |
 | `phone` | `Phone`, `PhoneNumber`, `BillToPhone` | high |  |
 | `shippingAddress.street` | `Address1`, `ShipToAddress1`, `BillToAddress1` | medium |  |
 | `shippingAddress.city` | `City`, `ShipToCity`, `BillToCity` | medium |  |
 | `shippingAddress.province` | `Province`, `State`, `ShipToProvince` | medium |  |
 | `shippingAddress.postalCode` | `PostalCode`, `Zip`, `ZipCode`, `ShipToPostalCode` | medium |  |
-| `creditLimit` | `CreditLimit`, `CreditLimitAmount` | medium |  |
-| `balance` | `Balance`, `CurrentBalance`, `ARBalance` | medium |  |
-| `terms` | `Terms`, `TermsCode`, `PaymentTerms` | medium |  |
-| `taxCode` | `TaxCode`, `TaxGroup`, `TaxStatus` | medium |  |
+| `role` | constant | high |  |
 
-## Vendors / timber suppliers (`vendors` -> `vendors`)
+## Vendors / timber suppliers (`vendors`)
 
-Document id from: `VendorCode`, `VendorNo`, `SupplierCode`, `VendorID`
+Target: `vendors` (planned)
+
+No vendors collection or rules block yet; the admin vendor page is the next feature. Keep this mapping until that lands.
 
 | Firestore field | Guessed Spruce column(s) | Confidence | Note |
 | --- | --- | --- | --- |
@@ -79,48 +88,32 @@ Document id from: `VendorCode`, `VendorNo`, `SupplierCode`, `VendorID`
 | `terms` | `Terms`, `TermsCode`, `PaymentTerms` | medium |  |
 | `leadTimeDays` | `LeadTimeDays`, `LeadTime`, `DaysToDeliver` | guess |  |
 
-## Sales history / invoices (`sales` -> `invoices`)
+## Sales history / invoices (`sales`)
 
-Document id from: `InvoiceNumber`, `InvoiceNo`, `DocumentNo`, `OrderNumber`
+Target: `salesQuotes` (ready)
+
+Historical invoices land in salesQuotes because it is the only priced sales collection today. Set createdBy to the importing staff uid, and keep taxRate at 0.05 so the GST checks in firestore.rules hold.
 
 | Firestore field | Guessed Spruce column(s) | Confidence | Note |
 | --- | --- | --- | --- |
-| `customerCode` | `CustomerCode`, `CustNo`, `CustomerID` | high |  |
-| `date` | `InvoiceDate`, `Date`, `DocumentDate` | high |  |
-| `dueDate` | `DueDate`, `PaymentDueDate` | medium |  |
+| `customerName` | `CustomerName`, `BillToName`, `Customer` | high |  |
 | `subtotal` | `Subtotal`, `NetAmount`, `GoodsAmount` | high |  |
 | `discountAmount` | `DiscountAmount`, `Discount` | medium |  |
 | `taxableSubtotal` | `TaxableAmount`, `TaxableSubtotal` | medium |  |
 | `tax` | `TaxTotal`, `TaxAmount`, `GSTAmount`, `Tax` | high |  |
 | `total` | `Total`, `InvoiceTotal`, `DocumentTotal`, `GrossAmount` | high |  |
-| `balance` | `Balance`, `AmountDue`, `OpenBalance` | medium |  |
-| `salesRep` | `SalesRep`, `Salesperson`, `RepCode` | medium |  |
-| `lines` | `Lines`, `InvoiceLines`, `Details`, `LineItems` | guess | Nested line arrays only survive a JSON export; a CSV export needs the line file joined on invoice number. |
+| `taxRate` | constant | high |  |
+| `createdAt` | `InvoiceDate`, `Date`, `DocumentDate` | high |  |
 
-## General ledger accounts (`accounts` -> `accounts`)
+## General ledger accounts (`accounts`)
 
-Document id from: `AccountNumber`, `AccountNo`, `GLAccount`, `AccountCode`
+Target: none yet (planned)
+
+The app has no accounting collection yet, so there is nowhere to import these rows. Mapping kept for the field names only.
 
 | Firestore field | Guessed Spruce column(s) | Confidence | Note |
 | --- | --- | --- | --- |
-| `description` | `Description`, `AccountName`, `Name` | high |  |
+| `name` | `Description`, `AccountDescription`, `AccountName` | high |  |
 | `type` | `Type`, `AccountType`, `Category` | medium |  |
 | `balance` | `Balance`, `CurrentBalance`, `Amount` | medium |  |
 | `asOf` | `AsOfDate`, `BalanceDate`, `PeriodEnd` | guess |  |
-
-## Running it
-
-```bash
-npm run migrate:eci -- items exports/spruce-items.csv --csv
-npm run migrate:eci -- customers exports/spruce-customers.json
-npm run migrate:eci -- vendors exports/spruce-vendors.json
-npm run migrate:eci -- sales exports/spruce-invoices.json
-npm run migrate:eci -- accounts exports/spruce-accounts.json
-```
-
-Output goes to `out/eci-spruce/`: `<entity>.json` holds the Firestore-shaped
-documents keyed by id, and `<entity>-report.json` holds unmapped columns, missing or
-duplicate ids, and a sample source/document pair. Nothing is written to Firestore;
-loading is a separate, deliberate step once the mapping is confirmed.
-
-`scripts/eci-spruce/samples/` has a worked example of the expected shape.
